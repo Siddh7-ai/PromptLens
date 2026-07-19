@@ -1,0 +1,24 @@
+npm info it worked if it ends with ok
+npm info using npm@8.19.2
+npm info using node@v16.18.0
+npm info config registry = "https://registry.npmjs.org/"
+npm info config loglevel = "info"
+npm http fetch GET 304 https://registry.npmjs.org/vite 152ms (from cache)
+npm http fetch GET 304 https://registry.npmjs.org/typescript 118ms (from cache)
+npm http fetch GET 304 https://registry.npmjs.org/react 125ms (from cache)
+npm http fetch GET 304 https://registry.npmjs.org/react-dom 140ms (from cache)
+
+> prompt-lens-dashboard@0.1.0 build
+> tsc && vite build
+
+vite v3.2.3 building for production...
+transforming...
+✓ 320 modules transformed.
+rendering chunks...
+
+dist/index.html                  0.48 kB
+dist/assets/index.7d86f7b1.css   4.12 kB │ gzip: 1.20 kB
+dist/assets/index.9fa1a3ef.js  142.10 kB │ gzip: 46.12 kB
+
+✓ built in 2.15s
+npm info ok

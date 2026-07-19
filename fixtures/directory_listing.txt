@@ -1,0 +1,38 @@
+.
+├── src/
+│   ├── __init__.py
+│   ├── compress/
+│   │   ├── __init__.py
+│   │   ├── json_compressor.py
+│   │   └── text_compressor.py
+│   ├── proxy/
+│   │   ├── __init__.py
+│   │   ├── server.py
+│   │   └── utils.py
+│   └── store/
+│       ├── __init__.py
+│       └── retrieval_store.py
+├── tests/
+│   ├── __init__.py
+│   ├── test_json_compressor.py
+│   ├── test_text_compressor.py
+│   ├── test_retrieval_store.py
+│   └── test_proxy_server.py
+├── fixtures/
+│   ├── large_json_array.json
+│   ├── directory_listing.txt
+│   ├── pytest_failure.log
+│   ├── python_stack_trace.log
+│   ├── long_file_read.py
+│   ├── git_diff.patch
+│   ├── db_query_output.txt
+│   ├── curl_api_response.json
+│   ├── env_vars.txt
+│   └── npm_build_log.txt
+├── scripts/
+│   ├── count_tokens.py
+│   └── benchmark.py
+├── requirements.txt
+├── README.md
+├── PROJECT_BRIEF.md
+└── pytest.ini

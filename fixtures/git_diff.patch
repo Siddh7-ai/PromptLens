@@ -1,0 +1,47 @@
+diff --git a/src/compress/json_compressor.py b/src/compress/json_compressor.py
+index a1b2c3d..e5f6g7h 100644
+--- a/src/compress/json_compressor.py
++++ b/src/compress/json_compressor.py
+@@ -10,12 +10,15 @@ def compress_json(data: dict | list, max_tokens: int) -> dict:
+     """
+     Compresses JSON by truncating long arrays and deduplicating schemas.
+     """
+-    if isinstance(data, list):
+-        return truncate_array(data, max_tokens)
++    if not data:
++        return data
++    
+     if isinstance(data, list):
+         return [compress_json(item, max_tokens) for item in truncate_array(data, max_tokens)]
+-    elif isinstance(data, dict):
+-        return {k: compress_json(v, max_tokens) for k, v in data.items()}
++    
++    if isinstance(data, dict):
++        deduped = deduplicate_schemas(data)
++        return {k: compress_json(v, max_tokens) for k, v in deduped.items()}
+     return data
+ 
+ def truncate_array(arr: list, max_tokens: int) -> list:
+diff --git a/src/proxy/server.py b/src/proxy/server.py
+index 9876543..1234567 100644
+--- a/src/proxy/server.py
++++ b/src/proxy/server.py
+@@ -1,11 +1,14 @@
+ from fastapi import FastAPI, Request, Response
+ import httpx
++import os
++from src.compress.json_compressor import compress_json
+ 
+ app = FastAPI()
++ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+ 
+ @app.post("/v1/messages")
+ async def proxy_messages(request: Request):
+-    client = httpx.AsyncClient()
+-    headers = dict(request.headers)
+-    body = await request.body()
+-    return Response(content=body, status_code=200)
++    async with httpx.AsyncClient() as client:
++        headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
++        body = await request.json()
++        # TODO: wire compression

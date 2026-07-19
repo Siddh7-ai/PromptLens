@@ -1,0 +1,32 @@
+============================= FAILURES =============================
+_______________________ test_json_compression _______________________
+
+    def test_json_compression():
+        input_data = {
+            "users": [
+                {"id": 1, "name": "Alice"},
+                {"id": 2, "name": "Bob"}
+            ]
+        }
+        max_tokens = 50
+>       compressed = compress_json(input_data, max_tokens)
+
+tests/test_json_compressor.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+src/compress/json_compressor.py:42: in compress_json
+    return deduplicate_schemas(truncated_data)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+data = [{'id': 1, 'name': 'Alice'}, {'id': 2, 'name': 'Bob'}]
+
+    def deduplicate_schemas(data):
+        if not isinstance(data, list):
+>           raise ValueError("Expected a list of dicts for schema deduplication")
+E           ValueError: Expected a list of dicts for schema deduplication
+
+src/compress/json_compressor.py:78: ValueError
+----------------------------- Captured stdout -----------------------------
+[DEBUG] Starting JSON compression sequence...
+[DEBUG] Original token count: 120
+[DEBUG] Running array truncation...
+====================== 1 failed, 14 passed in 0.18s ======================

@@ -1,0 +1,42 @@
+{
+  "id": 123456789,
+  "node_id": "MDEwOlJlcG9zaXRvcnkxMjM0NTY3ODk=",
+  "name": "PromptLens",
+  "full_name": "Siddh7-ai/PromptLens",
+  "private": false,
+  "owner": {
+    "login": "Siddh7-ai",
+    "id": 98765432,
+    "avatar_url": "https://avatars.githubusercontent.com/u/98765432?v=4",
+    "type": "Organization",
+    "site_admin": false
+  },
+  "html_url": "https://github.com/Siddh7-ai/PromptLens",
+  "description": "Local compression proxy for AI coding agents",
+  "fork": false,
+  "url": "https://api.github.com/repos/Siddh7-ai/PromptLens",
+  "created_at": "2026-07-19T10:00:00Z",
+  "updated_at": "2026-07-19T23:13:39Z",
+  "pushed_at": "2026-07-19T23:13:39Z",
+  "homepage": "",
+  "size": 150,
+  "stargazers_count": 42,
+  "watchers_count": 42,
+  "language": "Python",
+  "has_issues": true,
+  "has_projects": true,
+  "has_downloads": true,
+  "has_wiki": true,
+  "has_pages": false,
+  "forks_count": 3,
+  "archived": false,
+  "disabled": false,
+  "open_issues_count": 2,
+  "license": {
+    "key": "mit",
+    "name": "MIT License",
+    "spdx_id": "MIT",
+    "url": "https://api.github.com/licenses/mit"
+  },
+  "default_branch": "main"
+}
