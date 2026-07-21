@@ -59,10 +59,14 @@ def _compress_node(node: Any, retrieval_id: str, max_array_items: int = 3) -> An
         return node
 
 
+from src.store.retrieval_store import RetrievalStore, get_global_store
+
+
 def compress_json(
     json_str: str,
     max_array_items: int = 3,
     min_token_threshold: int = 50,
+    store: Any = None,
 ) -> JSONCompressionResult:
     """
     Compresses a JSON string using rule-based array truncation and whitespace minification.
@@ -71,10 +75,13 @@ def compress_json(
         json_str: The raw JSON string to compress.
         max_array_items: Maximum items to retain in arrays before truncating.
         min_token_threshold: Minimum tokens required to trigger structural compression.
+        store: Optional RetrievalStore instance. Defaults to get_global_store().
 
     Returns:
         JSONCompressionResult object with compressed string and token metrics.
     """
+    if store is None:
+        store = get_global_store()
     original_tokens = get_token_count(json_str)
     retrieval_id = hashlib.sha256(json_str.encode("utf-8")).hexdigest()[:12]
 
@@ -123,6 +130,9 @@ def compress_json(
         )
 
     ratio = round(1.0 - (compressed_tokens / original_tokens), 4)
+
+    if store:
+        store.save(json_str, retrieval_id)
 
     return JSONCompressionResult(
         compressed_str=compressed_str,

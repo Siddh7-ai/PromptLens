@@ -1,5 +1,6 @@
 import hashlib
 from dataclasses import dataclass
+from typing import Any
 
 import tiktoken
 
@@ -41,11 +42,15 @@ def _compress_stack_trace(lines: list[str], retrieval_id: str) -> list[str]:
     return head + [marker] + tail
 
 
+from src.store.retrieval_store import RetrievalStore, get_global_store
+
+
 def compress_text(
     text: str,
     head_lines: int = 10,
     tail_lines: int = 10,
     min_token_threshold: int = 50,
+    store: Any = None,
 ) -> TextCompressionResult:
     """
     Compresses non-JSON text outputs (logs, stack traces, file reads, diffs).
@@ -55,10 +60,13 @@ def compress_text(
         head_lines: Number of lines to preserve at the start of text.
         tail_lines: Number of lines to preserve at the end of text.
         min_token_threshold: Minimum tokens required to trigger truncation.
+        store: Optional RetrievalStore instance. Defaults to get_global_store().
 
     Returns:
         TextCompressionResult object containing compressed string and stats.
     """
+    if store is None:
+        store = get_global_store()
     original_tokens = get_token_count(text)
     retrieval_id = hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
 
@@ -115,6 +123,9 @@ def compress_text(
         )
 
     ratio = round(1.0 - (compressed_tokens / original_tokens), 4)
+
+    if store:
+        store.save(text, retrieval_id)
 
     return TextCompressionResult(
         compressed_str=compressed_str,
