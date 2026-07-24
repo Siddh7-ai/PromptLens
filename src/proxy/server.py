@@ -3,6 +3,9 @@ import json
 import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+
 
 from src.compress.json_compressor import compress_json
 from src.compress.text_compressor import compress_text
@@ -16,6 +19,20 @@ metrics_tracker = get_global_metrics()
 TARGET_BASE_URL = os.getenv("TARGET_BASE_URL", "https://api.anthropic.com").rstrip("/")
 
 app = FastAPI(title="PromptLens Proxy", version="0.1.0")
+
+# Enable CORS for React dashboard on port 3000
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class PlaygroundRequest(BaseModel):
+    content: str
+
 
 # Headers that shouldn't be forwarded directly between client and upstream
 HOP_BY_HOP_HEADERS = {
@@ -186,10 +203,29 @@ async def get_stats():
     return metrics_tracker.get_summary()
 
 
+@app.post("/api/compress")
+async def playground_compress(req: PlaygroundRequest):
+    """API endpoint for interactive React Playground compression preview."""
+    new_content, stored_id, ratio = _compress_tool_content(req.content)
+    from src.compress.text_compressor import get_token_count
+    orig_tokens = get_token_count(req.content)
+    comp_tokens = get_token_count(new_content)
+    savings_pct = round((1.0 - (comp_tokens / orig_tokens)) * 100.0, 1) if orig_tokens > 0 else 0.0
+
+    return {
+        "compressed_text": new_content,
+        "original_tokens": orig_tokens,
+        "compressed_tokens": comp_tokens,
+        "savings_pct": savings_pct,
+        "retrieval_id": stored_id
+    }
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 async def get_dashboard():
     """Headroom-style Web Dashboard UI."""
     return HTMLResponse(content=DASHBOARD_HTML)
+
 
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
