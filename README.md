@@ -2,7 +2,7 @@
 
 > Cut AI coding agent LLM token costs by **50% to 98%** with **zero code modifications** to your agent.
 
-PromptLens is a lightweight, rule-based local compression proxy for AI coding agents (such as Claude Code). It sits transparently between your agent and the LLM API, compresses repetitive tool-call outputs (JSON arrays, stack traces, build logs, file reads) before forwarding them, and exposes a reversible `retrieve_original(id)` tool so the model can recover full uncompressed data if needed.
+PromptLens is a lightweight, rule-based local compression proxy for AI coding agents (such as Claude Code, Cursor, or custom Python agents). It sits transparently between your agent and the LLM API, compresses repetitive tool-call outputs (JSON arrays, stack traces, build logs, file reads) before forwarding them, and exposes a reversible `retrieve_original(id)` tool so the model can recover full uncompressed data if needed.
 
 ---
 
@@ -12,47 +12,82 @@ PromptLens is a lightweight, rule-based local compression proxy for AI coding ag
 - 🔒 **Reversible Retrieval Store (Vault)**: Saves uncompressed raw data keyed by SHA-256 hash IDs with automatic TTL expiration.
 - 🛠️ **Transparent Tool Injection**: Automatically injects `retrieve_original(id)` into agent tools so LLMs can fetch original data on demand.
 - 🌉 **Zero-Code Passthrough Proxy**: Transparent FastAPI proxy supporting Anthropic API requests (`POST /v1/messages`) and streaming responses.
-- 📊 **Headroom-Style Live Dashboard**: Real-time web UI (`http://localhost:8000/dashboard`) displaying token savings, estimated USD saved, active vault items, and request audit streams.
+- 📊 **Headroom-Style React Dashboard**: Standalone React + TypeScript web app (`http://localhost:3000`) featuring Headroom obsidian theme, Reversible Vault Inspector, Token Savings Chart, and Rule Settings sliders.
 
 ---
 
-## 🚀 Quickstart (Under 5 Minutes)
+## 🚀 Quickstart Guide: How to Run the Whole Project
 
-### 1. Installation
-Clone the repository and install dependencies:
+### Step 1: Install Dependencies & Activate Environment
+
 ```bash
+# Clone the repository
 git clone https://github.com/Siddh7-ai/PromptLens.git
 cd PromptLens
 
-# Create and activate virtual environment
+# Create and activate Python virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .\.venv\Scripts\activate
+source .venv/bin/activate        # On Windows (PowerShell): .\.venv\Scripts\activate
 
-# Install requirements
+# Install Python requirements
 pip install -r requirements.txt
+
+# Install Dashboard Node dependencies
+cd dashboard
+npm install
+cd ..
 ```
 
-### 2. Start the Proxy Server & Dashboard
+---
+
+### Step 2: Start the PromptLens Python Proxy Backend
+
+In your main project directory, start the FastAPI proxy server on port 8000:
+
+**On Windows (PowerShell):**
+```powershell
+.\.venv\Scripts\uvicorn src.proxy.server:app --port 8000 --reload
+```
+
+**On Linux / macOS:**
 ```bash
 uvicorn src.proxy.server:app --port 8000 --reload
 ```
 - **Proxy Endpoint:** `http://localhost:8000/v1`
 - **Health Check:** `http://localhost:8000/health`
-- **Live Web Dashboard:** `http://localhost:8000/dashboard`
+- **Metrics API:** `http://localhost:8000/api/stats`
 
 ---
 
-## 🤖 Using PromptLens with AI Agents
+### Step 3: Start the Standalone React Dashboard
 
-To wrap any AI coding agent with PromptLens, set the `ANTHROPIC_BASE_URL` environment variable to point to the local proxy:
+In a new terminal window:
 
-### Bash / Linux / macOS:
+```bash
+cd dashboard
+npm run dev
+```
+
+Open **`http://localhost:3000`** in your browser to access:
+- **Overview & Community Stats**
+- **Reversible Vault Inspector**
+- **Interactive Playground ✨**
+- **Token Savings Chart**
+- **Rule Settings & Sliders**
+
+---
+
+### Step 4: Run AI Agents Through PromptLens
+
+To route any AI coding agent (like Claude Code or Cursor) through PromptLens, set the `ANTHROPIC_BASE_URL` environment variable:
+
+#### Linux / macOS:
 ```bash
 export ANTHROPIC_BASE_URL="http://localhost:8000/v1"
 claude
 ```
 
-### Windows (PowerShell):
+#### Windows (PowerShell):
 ```powershell
 $env:ANTHROPIC_BASE_URL="http://localhost:8000/v1"
 claude
@@ -62,12 +97,10 @@ claude
 
 ## 📊 Benchmark Results Across 5 Real-World Tasks
 
-Run the benchmark suite to evaluate token reduction across representative tool outputs:
+Run the 5-task benchmark evaluation script:
 ```bash
 python scripts/benchmark_tasks.py
 ```
-
-### Benchmark Results Table
 
 | Task Name | Category | Baseline Tokens | Compressed Tokens | Token Reduction | Correctness |
 |---|---|:---:|:---:|:---:|:---:|
@@ -80,9 +113,9 @@ python scripts/benchmark_tasks.py
 
 ---
 
-## 🧪 Running Automated Tests
+## 🧪 Running Automated Unit Tests
 
-Run the complete 23-test suite with `pytest`:
+Run all 23 automated tests with `pytest`:
 ```bash
 pytest
 ```
@@ -93,25 +126,41 @@ pytest
 
 ```text
 PromptLens/
-├── fixtures/                    # Real-world tool output test fixtures
+├── dashboard/                  # ⚛️ Standalone React 18 + TypeScript Web Dashboard
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Sidebar.tsx             # Headroom obsidian docs sidebar
+│   │   │   ├── VaultInspector.tsx      # Reversible vault payload inspector
+│   │   │   ├── SavingsChart.tsx        # Interactive SVG savings line curve
+│   │   │   ├── SettingsPanel.tsx       # Live compression sliders
+│   │   │   ├── StatCard.tsx            # Stat cards
+│   │   │   ├── OptimizationBar.tsx     # Optimization ratio gauge
+│   │   │   ├── BenchmarkTable.tsx      # 5-task benchmark table
+│   │   │   ├── RequestStream.tsx       # Audit log table
+│   │   │   └── Playground.tsx          # Interactive live testbed
+│   │   ├── App.tsx                     # Main React application shell
+│   │   └── types.ts                    # TypeScript interfaces
+│   ├── package.json
+│   ├── tailwind.config.js
+│   └── vite.config.ts
+├── fixtures/                   # Real-world tool output test fixtures
 ├── scripts/
-│   ├── count_tokens.py          # Token counter baseline script
-│   ├── benchmark_mission3.py    # Compression engine benchmark
-│   ├── benchmark_tasks.py      # 5-task comprehensive benchmark suite
-│   └── run_agent_demo.py        # Multi-turn real agent integration demo
+│   ├── count_tokens.py         # Token counter baseline script
+│   ├── benchmark_tasks.py     # 5-task benchmark suite
+│   └── run_agent_demo.py       # Multi-turn real agent integration demo
 ├── src/
 │   ├── compress/
-│   │   ├── json_compressor.py   # Rule-based JSON array truncation
-│   │   └── text_compressor.py   # Log, stack trace, and diff compressor
+│   │   ├── json_compressor.py  # Rule-based JSON array truncation
+│   │   └── text_compressor.py  # Log, stack trace, and diff compressor
 │   ├── store/
-│   │   └── retrieval_store.py   # Hash-keyed reversible data vault (TTL)
+│   │   └── retrieval_store.py  # Hash-keyed reversible data vault
 │   └── proxy/
-│       ├── server.py            # FastAPI transparent passthrough proxy
-│       ├── stats.py             # Metrics tracking engine
-│       └── dashboard_html.py    # Headroom-styled Web Dashboard UI
-├── tests/                       # 23 automated unit & integration tests
-├── PROJECT_BRIEF.md             # Project requirements and specification
-└── requirements.txt             # Dependencies (fastapi, uvicorn, httpx, tiktoken, pytest)
+│       ├── server.py           # FastAPI transparent passthrough proxy
+│       ├── stats.py            # Metrics tracking engine
+│       └── dashboard_html.py   # Web Dashboard UI
+├── tests/                      # 23 automated unit & integration tests
+├── PROJECT_BRIEF.md            # Specification
+└── requirements.txt            # Python dependencies
 ```
 
 ---
