@@ -35,6 +35,23 @@ class RetrievalStore:
         self._store[retrieval_id] = item
         return retrieval_id
 
+    def list_items(self) -> list:
+        """Returns metadata list of all active non-expired vault payloads."""
+        self.cleanup_expired()
+        items = []
+        for retrieval_id, item in self._store.items():
+            content = item.content
+            items.append({
+                "retrieval_id": retrieval_id,
+                "created_at": item.created_at,
+                "size_bytes": len(content.encode("utf-8")),
+                "preview": content[:150] + ("..." if len(content) > 150 else ""),
+                "full_content": content
+            })
+        items.sort(key=lambda x: x["created_at"], reverse=True)
+        return items
+
+
     def get(self, retrieval_id: str) -> Optional[str]:
         """
         Retrieves original content by retrieval_id if not expired.

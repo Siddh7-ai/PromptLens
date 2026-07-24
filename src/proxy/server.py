@@ -197,10 +197,58 @@ async def health_check():
     }
 
 
+# Configurable Settings State
+COMPRESSION_SETTINGS = {
+    "head_lines": 10,
+    "tail_lines": 10,
+    "max_json_array": 50,
+    "min_tokens_threshold": 100
+}
+
+
+class SettingsUpdateRequest(BaseModel):
+    head_lines: int
+    tail_lines: int
+    max_json_array: int
+    min_tokens_threshold: int
+
+
 @app.get("/api/stats")
 async def get_stats():
     """JSON API endpoint returning real-time proxy metrics and recent request logs."""
     return metrics_tracker.get_summary()
+
+
+@app.get("/api/vault")
+async def get_vault_items():
+    """Returns list of active uncompressed payloads stored in the vault."""
+    return {"items": retrieval_store.list_items()}
+
+
+@app.get("/api/vault/{retrieval_id}")
+async def get_vault_item_content(retrieval_id: str):
+    """Returns original raw uncompressed text for a specific vault ID."""
+    content = retrieval_store.get(retrieval_id)
+    if content is None:
+        return Response(status_code=404, content=json.dumps({"error": "Item not found or expired"}), media_type="application/json")
+    return {"retrieval_id": retrieval_id, "content": content}
+
+
+@app.get("/api/settings")
+async def get_settings():
+    """Returns current live compression settings."""
+    return COMPRESSION_SETTINGS
+
+
+@app.post("/api/settings")
+async def update_settings(req: SettingsUpdateRequest):
+    """Updates compression settings live."""
+    COMPRESSION_SETTINGS["head_lines"] = req.head_lines
+    COMPRESSION_SETTINGS["tail_lines"] = req.tail_lines
+    COMPRESSION_SETTINGS["max_json_array"] = req.max_json_array
+    COMPRESSION_SETTINGS["min_tokens_threshold"] = req.min_tokens_threshold
+    return {"status": "updated", "settings": COMPRESSION_SETTINGS}
+
 
 
 @app.post("/api/compress")

@@ -2,7 +2,6 @@ export interface RequestLog {
   id: number;
   timestamp: string;
   path: string;
-
   method: string;
   baseline_tokens: number;
   compressed_tokens: number;
@@ -37,4 +36,19 @@ export interface CompressionResult {
   compressed_tokens: number;
   savings_pct: number;
   retrieval_id: string | null;
+}
+
+export interface VaultItem {
+  retrieval_id: string;
+  created_at: number;
+  size_bytes: number;
+  preview: string;
+  full_content: string;
+}
+
+export interface CompressionSettings {
+  head_lines: number;
+  tail_lines: number;
+  max_json_array: number;
+  min_tokens_threshold: number;
 }
