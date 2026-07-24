@@ -22,3 +22,8 @@ dashboard/dist/
 # Environment variables
 .env
 .env.local
+
+# Personal / College Notes
+VIVA_FAQ.md
+MONTH*.md
+

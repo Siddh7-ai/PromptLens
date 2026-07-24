@@ -1,4 +1,5 @@
 import hashlib
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -28,8 +29,8 @@ def get_token_count(text: str) -> int:
 
 def generate_structural_index(lines: list[str]) -> str:
     """
-    Parses code or structured text across Python, JS/TS, Rust, Go, and Markdown
-    to build a Table of Contents index mapping line ranges to symbols.
+    Parses code or structured text across Python, JS/TS, Rust, Go, Java, C/C++, SQL, Logs,
+    and Markdown. Includes fallback block-chunking for arbitrary unstructured text.
     """
     sections = []
     current_symbol = None
@@ -39,21 +40,36 @@ def generate_structural_index(lines: list[str]) -> str:
         "class ", "def ", "async def ", "function ", "async function ",
         "struct ", "impl ", "enum ", "trait ", "func ", "type ",
         "export default ", "export function ", "export class ",
+        "public ", "private ", "protected ", "static ", "void ",
+        "SELECT ", "CREATE TABLE ", "INSERT INTO ", "UPDATE ", "DELETE FROM ",
         "# ", "## ", "### "
     )
 
+    # Generic pattern matching for colons, square brackets [LOG], or function signatures
+    generic_pattern = re.compile(r'^(?:[A-Z0-9_\-\.\s]{3,30}:|[\[\(][A-Za-z0-9_\-]+[\]\)]|\w+\s+\w+\s*\(.*\))', re.IGNORECASE)
+
     for idx, line in enumerate(lines, 1):
         stripped = line.strip()
-        if stripped.startswith(symbol_prefixes):
+        is_match = stripped.startswith(symbol_prefixes) or bool(generic_pattern.match(stripped))
+
+        if is_match:
             if current_symbol:
                 sections.append(f"Lines {symbol_start}-{idx-1}: {current_symbol}")
             symbol_parts = stripped.split(":") if ":" in stripped else [stripped]
             raw_sym = symbol_parts[0].replace("{", "").strip()
-            current_symbol = " ".join(raw_sym.split())
+            current_symbol = " ".join(raw_sym.split())[:40]
             symbol_start = idx
 
     if current_symbol and len(lines) >= symbol_start:
         sections.append(f"Lines {symbol_start}-{len(lines)}: {current_symbol}")
+
+    # Fallback Block Chunking for completely unstructured plain text
+    if not sections and len(lines) > 20:
+        chunk_size = max(10, len(lines) // 5)
+        for start_idx in range(1, len(lines) + 1, chunk_size):
+            end_idx = min(len(lines), start_idx + chunk_size - 1)
+            first_words = " ".join(lines[start_idx-1].strip().split()[:5]) or "Content Block"
+            sections.append(f"Lines {start_idx}-{end_idx}: {first_words}...")
 
     if not sections:
         return ""
