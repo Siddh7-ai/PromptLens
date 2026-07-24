@@ -116,8 +116,24 @@ export const SavingsChart: React.FC<SavingsChartProps> = ({ requests }) => {
           </svg>
         </div>
 
-        <div className="text-xs text-[#666666] pt-2 border-t border-[#1a1a1a]">
-          Average reduction across requests: <strong className="text-white">82.4% token efficiency</strong>.
+        <div className="flex items-center justify-between text-xs text-[#666666] pt-2 border-t border-[#1a1a1a]">
+          <div>
+            Average reduction across requests: <strong className="text-white">
+              {(
+                chartData.reduce((acc, curr) => acc + curr.savings_pct, 0) / (chartData.length || 1)
+              ).toFixed(1)}% token efficiency
+            </strong>
+          </div>
+          <div>
+            Total Volume Reduction: <strong className="text-white font-semibold">
+              {(
+                (1 -
+                  chartData.reduce((acc, curr) => acc + curr.compressed_tokens, 0) /
+                    (chartData.reduce((acc, curr) => acc + curr.baseline_tokens, 0) || 1)) *
+                100
+              ).toFixed(1)}% tokens saved
+            </strong>
+          </div>
         </div>
       </div>
     </div>

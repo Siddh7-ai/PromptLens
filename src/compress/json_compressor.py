@@ -27,10 +27,69 @@ def get_token_count(text: str) -> int:
         return len(text.split())
 
 
+def _generate_array_skimming_summary(items: list) -> dict:
+    """
+    Generates structural key and value range summary for truncated JSON arrays using
+    adaptive stride sampling for large payloads to ensure high speed and low token overhead.
+    """
+    if not items or not isinstance(items[0], dict):
+        return {}
+
+    total_items = len(items)
+    # Adaptive stride sampling: inspect up to 100 items max
+    if total_items <= 100:
+        sampled_items = items
+    else:
+        # Sample first 30, last 30, and uniform step sampling from the middle 40
+        head = items[:30]
+        tail = items[-30:]
+        middle_candidates = items[30:-30]
+        step = max(1, len(middle_candidates) // 40)
+        middle_sample = middle_candidates[::step][:40]
+        sampled_items = head + middle_sample + tail
+
+    all_keys = set()
+    key_values: dict[str, list] = {}
+
+    for item in sampled_items:
+        if isinstance(item, dict):
+            for k, v in item.items():
+                all_keys.add(k)
+                if k not in key_values:
+                    key_values[k] = []
+                key_values[k].append(v)
+
+    numeric_ranges = {}
+    distinct_enums = {}
+
+    for k, vals in key_values.items():
+        # Check numeric min/max
+        num_vals = [v for v in vals if isinstance(v, (int, float)) and not isinstance(v, bool)]
+        if len(num_vals) > 0:
+            numeric_ranges[k] = {"min": min(num_vals), "max": max(num_vals)}
+
+        # Check enum values
+        str_vals = set(v for v in vals if isinstance(v, str))
+        if 0 < len(str_vals) <= 5:
+            distinct_enums[k] = sorted(list(str_vals))
+
+    summary = {
+        "unique_keys": sorted(list(all_keys)),
+        "sampled_items_count": len(sampled_items),
+        "total_items": total_items,
+    }
+    if numeric_ranges:
+        summary["numeric_ranges"] = numeric_ranges
+    if distinct_enums:
+        summary["distinct_enum_values"] = distinct_enums
+
+    return summary
+
+
 def _compress_node(node: Any, retrieval_id: str, max_array_items: int = 3) -> Any:
     """
     Recursively compresses JSON nodes by truncating arrays larger than max_array_items
-    and appending a truncation notice with a retrieval key.
+    and appending a truncation notice with a retrieval key and key skimming summary.
     """
     if isinstance(node, list):
         if len(node) > max_array_items:
@@ -39,17 +98,21 @@ def _compress_node(node: Any, retrieval_id: str, max_array_items: int = 3) -> An
                 for item in node[:max_array_items]
             ]
             omitted = len(node) - max_array_items
+            skimming = _generate_array_skimming_summary(node)
             marker = {
                 "_promptlens_truncated": True,
                 "omitted_items": omitted,
                 "total_items": len(node),
                 "retrieval_id": retrieval_id,
+                "_promptlens_summary": skimming,
+                "summary": skimming,
                 "notice": f"Truncated {omitted} items. Use retrieve_original('{retrieval_id}') to view full list.",
             }
             compressed_list.append(marker)
             return compressed_list
         else:
             return [_compress_node(item, retrieval_id, max_array_items) for item in node]
+
     elif isinstance(node, dict):
         return {
             k: _compress_node(v, retrieval_id, max_array_items)

@@ -50,13 +50,30 @@ HOP_BY_HOP_HEADERS = {
 
 RETRIEVE_ORIGINAL_TOOL = {
     "name": "retrieve_original",
-    "description": "Retrieve full uncompressed original content for a compressed tool output using its unique hash ID.",
+    "description": "Retrieve full uncompressed original content or targeted line snippets using line ranges, regex/substring queries, and context windows.",
     "input_schema": {
         "type": "object",
         "properties": {
             "id": {
                 "type": "string",
                 "description": "The unique hash ID of the compressed content to retrieve."
+            },
+            "query": {
+                "type": "string",
+                "description": "Optional search term or regex pattern to filter matching lines."
+            },
+            "use_regex": {
+                "type": "boolean",
+                "description": "Whether to treat query as a regex pattern. Defaults to false."
+            },
+            "line_range": {
+                "type": "array",
+                "items": {"type": "integer"},
+                "description": "Optional 2-element array [start_line, end_line] (1-indexed)."
+            },
+            "context_lines": {
+                "type": "integer",
+                "description": "Number of surrounding context lines to include around query matches. Defaults to 0."
             }
         },
         "required": ["id"]
@@ -112,7 +129,7 @@ def process_anthropic_payload(payload: dict) -> dict:
     """
     Inspect and modify Anthropic payload:
     1. Compress tool_result content in user messages and save original to retrieval_store.
-    2. Intercept retrieve_original tool call results and substitute full original content.
+    2. Intercept retrieve_original tool call results and substitute targeted or full original content.
     3. Inject retrieve_original tool definition into tools list if tools exist AND content was compressed.
     """
     if not isinstance(payload, dict):
@@ -147,9 +164,20 @@ def process_anthropic_payload(payload: dict) -> dict:
 
                             # Check if tool_result is for retrieve_original
                             if t_info.get("name") == "retrieve_original":
-                                requested_id = t_info.get("input", {}).get("id")
+                                input_opts = t_info.get("input", {})
+                                requested_id = input_opts.get("id")
                                 if requested_id and retrieval_store.has(requested_id):
-                                    block["content"] = retrieval_store.get(requested_id)
+                                    query = input_opts.get("query")
+                                    use_regex = input_opts.get("use_regex", False)
+                                    line_range = input_opts.get("line_range")
+                                    context_lines = input_opts.get("context_lines", 0)
+                                    block["content"] = retrieval_store.get(
+                                        requested_id,
+                                        query=query,
+                                        line_range=line_range,
+                                        use_regex=use_regex,
+                                        context_lines=context_lines
+                                    )
                                     metrics_tracker.record_retrieval()
                                     continue
 

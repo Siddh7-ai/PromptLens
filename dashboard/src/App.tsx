@@ -57,7 +57,7 @@ export const App: React.FC = () => {
       />
 
       {/* Main View Area */}
-      <div className="flex-1 min-w-0 overflow-y-auto h-screen">
+      <div className="flex-1 min-w-0 overflow-y-auto h-screen scroll-smooth">
         {/* Top Header Bar */}
         <header className="border-b border-[#1f1f1f] bg-[#050505] px-8 py-3.5 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center space-x-3 text-xs text-[#888888]">
