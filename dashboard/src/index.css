@@ -3,30 +3,27 @@
 @tailwind utilities;
 
 /* =========================================================
-   Native Precision Touchpad & Inertial Trackpad Scrolling
+   Headroom Docs Window-Level Smooth Scrolling Architecture
    ========================================================= */
 
-html,
-body,
-#root {
-  /* Allow touchpad/trackpad native high-precision inertial scroll */
-  scroll-behavior: auto;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Enable smooth scrolling specifically for JS scrollTo and anchor jumps */
-.scroll-smooth {
+html {
   scroll-behavior: smooth;
+  background-color: #000000;
+  color: #ffffff;
 }
 
-@layer base {
-  body {
-    background-color: #000000;
-    color: #ffffff;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+body {
+  background-color: #000000;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-h-screen: 100vh;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 
