@@ -3,15 +3,12 @@
 @tailwind utilities;
 
 /* =========================================================
-   Universal Permanent Smooth Scrolling Across Whole Project
+   Performance Optimized Smooth Scrolling (HTML & Containers Only)
    ========================================================= */
 
 html,
 body,
-#root,
-*,
-*::before,
-*::after {
+.scroll-smooth {
   scroll-behavior: smooth !important;
   overscroll-behavior: contain;
 }
@@ -20,10 +17,7 @@ body,
 @media (prefers-reduced-motion: reduce) {
   html,
   body,
-  #root,
-  *,
-  *::before,
-  *::after {
+  .scroll-smooth {
     scroll-behavior: auto !important;
   }
 }
@@ -33,6 +27,8 @@ body,
     background-color: #000000;
     color: #ffffff;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -55,7 +51,7 @@ body,
 ::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: 9999px;
-  transition: background-color 0.3s ease-in-out;
+  transition: background-color 0.2s ease-in-out;
 }
 
 /* Show subtle sleek thumb only when user interacts/hovers over container */
@@ -71,19 +67,19 @@ body,
 * {
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.3s ease-in-out;
 }
 
 *:hover {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-/* Card utilities */
+/* Card utilities with GPU acceleration */
 .headroom-card {
   background-color: #0a0a0a;
   border: 1px solid #1f1f1f;
   border-radius: 12px;
   transition: border-color 0.15s ease, background-color 0.15s ease;
+  will-change: transform;
 }
 
 .headroom-card:hover {
