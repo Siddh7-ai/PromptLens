@@ -3,23 +3,21 @@
 @tailwind utilities;
 
 /* =========================================================
-   Performance Optimized Smooth Scrolling (HTML & Containers Only)
+   Native Precision Touchpad & Inertial Trackpad Scrolling
    ========================================================= */
 
 html,
 body,
-.scroll-smooth {
-  scroll-behavior: smooth !important;
-  overscroll-behavior: contain;
+#root {
+  /* Allow touchpad/trackpad native high-precision inertial scroll */
+  scroll-behavior: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Accessibility: Respect OS-level prefers-reduced-motion */
-@media (prefers-reduced-motion: reduce) {
-  html,
-  body,
-  .scroll-smooth {
-    scroll-behavior: auto !important;
-  }
+/* Enable smooth scrolling specifically for JS scrollTo and anchor jumps */
+.scroll-smooth {
+  scroll-behavior: smooth;
 }
 
 @layer base {
@@ -73,13 +71,12 @@ body,
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-/* Card utilities with GPU acceleration */
+/* Card utilities */
 .headroom-card {
   background-color: #0a0a0a;
   border: 1px solid #1f1f1f;
   border-radius: 12px;
   transition: border-color 0.15s ease, background-color 0.15s ease;
-  will-change: transform;
 }
 
 .headroom-card:hover {
