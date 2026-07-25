@@ -16,6 +16,18 @@ body,
   overscroll-behavior: contain;
 }
 
+/* Accessibility: Respect OS-level prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body,
+  #root,
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer base {
   body {
     background-color: #000000;

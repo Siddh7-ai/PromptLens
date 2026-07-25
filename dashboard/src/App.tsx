@@ -67,9 +67,36 @@ export const App: React.FC = () => {
     syncViewFromUrl();
     window.addEventListener('popstate', syncViewFromUrl);
 
+    // Global Smooth Scroll for Anchor Links with Header Offset & Reduced Motion Accessibility
+    const handleAnchorClick = (e: MouseEvent) => {
+      const targetLink = (e.target as HTMLElement).closest('a[href^="#"]');
+      if (!targetLink) return;
+
+      const targetId = targetLink.getAttribute('href');
+      if (!targetId || targetId === '#') return;
+
+      const targetElement = document.querySelector(targetId);
+      if (!targetElement) return;
+
+      e.preventDefault();
+
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const headerOffset = 64; // Sticky Header Height Offset
+      const elementPosition = targetElement.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: prefersReducedMotion ? 'auto' : 'smooth'
+      });
+    };
+
+    document.addEventListener('click', handleAnchorClick);
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('popstate', syncViewFromUrl);
+      document.removeEventListener('click', handleAnchorClick);
     };
   }, []);
 
