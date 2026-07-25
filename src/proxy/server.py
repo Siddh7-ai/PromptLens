@@ -324,14 +324,14 @@ async def proxy_passthrough(request: Request, path: str):
     if path.rstrip("/") == "v1/messages" and body:
         try:
             payload = json.loads(body)
-            processed_payload = process_anthropic_payload(payload)
-            body = json.dumps(processed_payload).encode("utf-8")
-
-            # Calculate token metrics for stats
             from src.compress.text_compressor import get_token_count
             baseline_tokens = get_token_count(json.dumps(payload))
-            compressed_tokens = get_token_count(json.dumps(processed_payload))
-        except Exception:
+            
+            processed_payload = process_anthropic_payload(payload)
+            body = json.dumps(processed_payload).encode("utf-8")
+            compressed_tokens = get_token_count(body.decode("utf-8"))
+        except Exception as err:
+            print(f"[Proxy Exception]: {err}")
             pass
 
     metrics_tracker.record_request(

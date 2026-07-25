@@ -2,12 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  scroll-behavior: smooth;
-}
+/* =========================================================
+   Universal Permanent Smooth Scrolling Across Whole Project
+   ========================================================= */
 
-* {
-  scroll-behavior: smooth;
+html,
+body,
+#root,
+*,
+*::before,
+*::after {
+  scroll-behavior: smooth !important;
+  overscroll-behavior: contain;
 }
 
 @layer base {
@@ -18,25 +24,49 @@ html {
   }
 }
 
-/* Permanent Smooth Custom Dark Scrollbar */
+/* =========================================================
+   Auto-Hiding Overlay Scrollbars (No permanent track line)
+   ========================================================= */
+
+/* Webkit (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
 }
 
+/* Completely hide the background track line */
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: transparent !important;
 }
 
+/* Hide scrollbar thumb by default */
 ::-webkit-scrollbar-thumb {
-  background: #222222;
-  border-radius: 4px;
+  background: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.3s ease-in-out;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #444444;
+/* Show subtle sleek thumb only when user interacts/hovers over container */
+*:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
 }
 
+*:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.6); /* Glowing Emerald on hover */
+}
+
+/* Firefox scrollbar auto-hide styling */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease-in-out;
+}
+
+*:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Card utilities */
 .headroom-card {
   background-color: #0a0a0a;
   border: 1px solid #1f1f1f;

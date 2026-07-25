@@ -8,6 +8,7 @@ import { Playground } from './components/Playground';
 import { VaultInspector } from './components/VaultInspector';
 import { SavingsChart } from './components/SavingsChart';
 import { SettingsPanel } from './components/SettingsPanel';
+import { DocsView } from './components/DocsView';
 import { MetricsSummary } from './types';
 import { RefreshCw } from 'lucide-react';
 
@@ -37,11 +38,46 @@ export const App: React.FC = () => {
     }
   };
 
+  // Sync URL Path <-> NavView state cleanly
   useEffect(() => {
     fetchStats();
     const interval = setInterval(fetchStats, 3000);
-    return () => clearInterval(interval);
+
+    const syncViewFromUrl = () => {
+      const pathname = window.location.pathname.replace(/^\//, '') || 'overview';
+      const validViews: NavView[] = [
+        'overview',
+        'quickstart',
+        'installation',
+        'how-compression-works',
+        'playground',
+        'vault',
+        'analytics',
+        'benchmarks',
+        'proxy-server',
+        'architecture',
+        'settings',
+        'troubleshooting',
+      ];
+      if (validViews.includes(pathname as NavView)) {
+        setCurrentView(pathname as NavView);
+      }
+    };
+
+    syncViewFromUrl();
+    window.addEventListener('popstate', syncViewFromUrl);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('popstate', syncViewFromUrl);
+    };
   }, []);
+
+  const handleNavigate = (view: NavView) => {
+    const path = view === 'overview' ? '/overview' : `/${view}`;
+    window.history.pushState({}, '', path);
+    setCurrentView(view);
+  };
 
   const vaultCount = metrics.recent_requests.filter((r) => r.retrieval_id !== '-').length;
 
@@ -50,7 +86,7 @@ export const App: React.FC = () => {
       {/* Headroom Sidebar */}
       <Sidebar
         currentView={currentView}
-        setCurrentView={setCurrentView}
+        setCurrentView={handleNavigate}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         vaultCount={vaultCount}
@@ -63,7 +99,7 @@ export const App: React.FC = () => {
           <div className="flex items-center space-x-3 text-xs text-[#888888]">
             <span className="font-mono text-[#555555]">PromptLens</span>
             <span>/</span>
-            <span className="font-medium text-white capitalize">{currentView}</span>
+            <span className="font-medium text-white capitalize">{currentView.replace(/-/g, ' ')}</span>
           </div>
           <button
             onClick={fetchStats}
@@ -133,7 +169,13 @@ export const App: React.FC = () => {
 
           {currentView === 'analytics' && <SavingsChart requests={metrics.recent_requests} />}
 
+          {currentView === 'benchmarks' && <BenchmarkTable />}
+
           {currentView === 'settings' && <SettingsPanel />}
+
+          {['quickstart', 'installation', 'how-compression-works', 'architecture', 'proxy-server', 'troubleshooting'].includes(
+            currentView
+          ) && <DocsView view={currentView} onNavigate={handleNavigate} />}
         </main>
       </div>
     </div>
