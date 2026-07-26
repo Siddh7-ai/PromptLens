@@ -31,10 +31,11 @@ body {
   gap: 6px;
 }
 
-.lightning-icon {
-  width: 16px;
-  height: 16px;
-  fill: #00ff88;
+.brand-logo-img {
+  width: 28px;
+  height: 18px;
+  object-fit: contain;
+  transform: scale(1.2);
 }
 
 .brand-title {

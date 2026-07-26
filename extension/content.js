@@ -1,4 +1,4 @@
-// PromptLens Content Script - Universal Web AI Interceptor & Auto Vault Retriever (100% SHA-256 Engine Parity Edition)
+// PromptLens Content Script - Universal Web AI Interceptor & Auto Vault Retriever (Official Transparent Eye Logo Parity)
 
 (function () {
   console.log('⚡ PromptLens Web AI Context Optimizer Pro active.');
@@ -7,6 +7,10 @@
   const processedMessageContainers = new Set();
   let isAutoRetrieving = false;
   let pillResetTimeout = null;
+
+  const logoImgUrl = (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL)
+    ? chrome.runtime.getURL('logo.png')
+    : '';
 
   const INPUT_SELECTORS = [
     '#prompt-textarea',
@@ -263,9 +267,7 @@
 
     indicator.innerHTML = `
       <div class="promptlens-side-content">
-        <svg class="promptlens-flash-icon" viewBox="0 0 24 24">
-          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-        </svg>
+        <img src="${logoImgUrl}" class="promptlens-flash-icon" alt="PromptLens Logo">
         <div>
           <div class="promptlens-side-title">${title}</div>
           <div class="promptlens-side-desc">${message}</div>
@@ -293,10 +295,10 @@
 
     if (currentMode === 'manual') {
       pill.title = 'Manual Mode (Click or press Alt+C to compress)';
-      span.textContent = '⚡ PromptLens Compress (Alt+C)';
+      span.textContent = 'PromptLens Compress (Alt+C)';
     } else {
       pill.title = 'Auto-Compress Mode active (compresses on Enter/Send)';
-      span.textContent = '⚡ PromptLens Auto-Compress Active';
+      span.textContent = 'PromptLens Auto-Compress Active';
     }
   }
 
@@ -336,7 +338,7 @@
     }
 
     const pill = document.getElementById('promptlens-pill');
-    if (pill) pill.querySelector('span').textContent = '⚡ Compressing...';
+    if (pill) pill.querySelector('span').textContent = 'Compressing...';
 
     const handleSuccess = (resText, savingsPct, vaultId) => {
       setInputValue(inputEl, resText);
@@ -345,7 +347,7 @@
         pill.querySelector('span').textContent = `✓ Cut ${savingsPct || 0}% Tokens (ID: ${vaultId || 'vault'})`;
       }
       if (currentMode === 'auto') {
-        showSideIndicator('⚡ PromptLens Auto-Compressed', `Cut ${savingsPct || 0}% tokens in background!`, vaultId);
+        showSideIndicator('PromptLens Auto-Compressed', `Cut ${savingsPct || 0}% tokens in background!`, vaultId);
       } else {
         showToast(`⚡ Compressed! Cut ${savingsPct || 0}% tokens (Vault ID: ${vaultId || 'saved'})`);
       }
@@ -396,10 +398,8 @@
     pill.id = 'promptlens-pill';
     pill.className = 'promptlens-compress-pill';
     pill.innerHTML = `
-      <svg class="promptlens-badge-icon" viewBox="0 0 24 24">
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
-      </svg>
-      <span>⚡ PromptLens Compress (Alt+C)</span>
+      <img src="${logoImgUrl}" class="promptlens-badge-icon" alt="PromptLens Logo">
+      <span>PromptLens Compress (Alt+C)</span>
     `;
 
     pill.addEventListener('click', (e) => {
@@ -490,7 +490,7 @@
                   drawer.innerHTML = `
                     <div class="promptlens-drawer-header">
                       <div class="promptlens-drawer-title">
-                        <svg class="promptlens-badge-icon" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                        <img src="${logoImgUrl}" class="promptlens-badge-icon" alt="PromptLens Logo">
                         PromptLens Reversible Vault Payload (${vaultId})
                       </div>
                       <span class="promptlens-drawer-close">✕</span>
@@ -534,7 +534,7 @@
       sessionStorage.setItem(retrievalKey, 'true');
 
       isAutoRetrieving = true;
-      showSideIndicator('⚡ PromptLens Auto-Retrieval', `Fetching lines from Vault (${vaultId})...`, vaultId);
+      showSideIndicator('PromptLens Auto-Retrieval', `Fetching lines from Vault (${vaultId})...`, vaultId);
 
       try {
         chrome.runtime.sendMessage(
