@@ -60,8 +60,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           onClick={() => navigateTo('overview')}
           className="flex items-center space-x-3 px-2 pt-1 cursor-pointer group"
         >
-          <PromptLensLogo className="w-7 h-5.5 object-contain" />
-          <div className="flex items-center space-x-2 -translate-y-[1.5px]">
+          <PromptLensLogo className="w-7 h-5 object-contain" />
+          <div className="flex items-center space-x-2">
             <span className="font-extrabold text-base tracking-tight text-white">PromptLens</span>
             <span className="px-1.5 py-0.5 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded">
               v0.1
