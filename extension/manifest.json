@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "PromptLens AI Context Optimizer",
+  "version": "1.0.0",
+  "description": "Cuts AI token costs by 50% to 98% on ChatGPT, Claude.ai, Gemini, DeepSeek, and web LLMs with reversible SHA-256 Vault retrieval.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*",
+    "https://gemini.google.com/*",
+    "https://chat.deepseek.com/*",
+    "https://openrouter.ai/*",
+    "http://localhost:8000/*",
+    "http://127.0.0.1:8000/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://chat.deepseek.com/*",
+        "https://openrouter.ai/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "PromptLens AI Context Optimizer"
+  }
+}

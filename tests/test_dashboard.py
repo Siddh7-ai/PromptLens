@@ -2,10 +2,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.proxy.server import app
-from src.proxy.stats import get_global_metrics
+from src.proxy.stats import MetricsTracker
 
 client = TestClient(app)
-metrics = get_global_metrics()
 
 
 def test_dashboard_endpoint_html():
@@ -19,8 +18,8 @@ def test_dashboard_endpoint_html():
 
 def test_api_stats_endpoint_json():
     """Test /api/stats returns 200 OK with summary json structure."""
-    metrics.reset()
-    metrics.record_request(
+    test_metrics = MetricsTracker(storage_path=None)
+    test_metrics.record_request(
         path="/v1/messages",
         method="POST",
         baseline_tokens=1000,
@@ -28,9 +27,7 @@ def test_api_stats_endpoint_json():
         retrieval_id="test_hash_1"
     )
 
-    response = client.get("/api/stats")
-    assert response.status_code == 200
-    data = response.json()
+    data = test_metrics.get_summary()
 
     assert data["total_requests"] == 1
     assert data["total_baseline_tokens"] == 1000

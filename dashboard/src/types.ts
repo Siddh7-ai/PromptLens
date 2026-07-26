@@ -17,6 +17,7 @@ export interface MetricsSummary {
   overall_savings_pct: number;
   estimated_usd_saved: number;
   total_retrievals: number;
+  active_vault_items?: number;
   recent_requests: RequestLog[];
 }
 

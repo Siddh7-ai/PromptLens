@@ -1,0 +1,221 @@
+/* PromptLens Chrome Extension Popup Obsidian Styling */
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 320px;
+  background-color: #050505;
+  color: #ffffff;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+}
+
+.popup-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1a1a1a;
+  padding-bottom: 10px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lightning-icon {
+  width: 16px;
+  height: 16px;
+  fill: #00ff88;
+}
+
+.brand-title {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: -0.3px;
+}
+
+.badge {
+  background: #181818;
+  color: #888888;
+  border: 1px solid #282828;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-mono: true;
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: #00ff88;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  background-color: #00ff88;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #00ff88;
+  flex-shrink: 0;
+  display: block;
+}
+
+.status-text {
+  display: inline-block;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
+/* Mode Selector Switch Card */
+.mode-selector-card {
+  background: #0a0a0a;
+  border: 1px solid #1f1f1f;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mode-label {
+  font-size: 10px;
+  color: #888888;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.mode-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: #000000;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #181818;
+}
+
+.mode-btn {
+  background: transparent;
+  color: #777777;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.mode-btn.active {
+  background: #1e1e1e;
+  color: #00ff88;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 255, 136, 0.15);
+}
+
+.mode-hint {
+  font-size: 10px;
+  color: #666666;
+  line-height: 1.3;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-card {
+  background: #0d0d0d;
+  border: 1px solid #1a1a1a;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #777777;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 4px 0 2px 0;
+  color: #ffffff;
+}
+
+.stat-value.green {
+  color: #00ff88;
+}
+
+.stat-sub {
+  font-size: 9px;
+  color: #555555;
+}
+
+.vault-info {
+  background: #090909;
+  border: 1px solid #141414;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  color: #888888;
+  font-size: 11px;
+}
+
+.code {
+  font-family: monospace;
+  color: #cccccc;
+}
+
+.code.highlight {
+  color: #00ff88;
+  font-weight: 600;
+}
+
+.actions {
+  margin-top: 4px;
+}
+
+.btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn.primary {
+  background: #00ff88;
+  color: #000000;
+}
+
+.btn.primary:hover {
+  background: #00cc6a;
+}

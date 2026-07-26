@@ -14,7 +14,7 @@ export const SettingsPanel: React.FC = () => {
 
   const fetchSettings = async () => {
     try {
-      const resp = await fetch('http://localhost:8000/api/settings');
+      const resp = await fetch('/api/settings');
       if (resp.ok) {
         const data: CompressionSettings = await resp.json();
         setSettings(data);
@@ -31,7 +31,7 @@ export const SettingsPanel: React.FC = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const resp = await fetch('http://localhost:8000/api/settings', {
+      const resp = await fetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),

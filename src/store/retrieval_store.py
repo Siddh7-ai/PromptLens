@@ -109,6 +109,12 @@ class RetrievalStore:
         items.sort(key=lambda x: x["created_at"], reverse=True)
         return items
 
+    def count(self) -> int:
+        """Returns total active non-expired item count in vault."""
+        self.cleanup_expired()
+        return len(self._store)
+
+
     def get_structural_map(self, retrieval_id: str) -> Optional[dict]:
         """
         Returns the cached structural map in <0.1ms if item exists.

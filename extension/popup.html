@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PromptLens AI Context Optimizer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <svg class="lightning-icon" viewBox="0 0 24 24">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+        <span class="brand-title">PromptLens</span>
+        <span class="badge">v1.0</span>
+      </div>
+      <div class="status-indicator">
+        <span class="dot"></span>
+        <span class="status-text">Active</span>
+      </div>
+    </header>
+
+    <!-- Compression Mode Switch -->
+    <div class="mode-selector-card">
+      <div class="mode-label">Compression Mode:</div>
+      <div class="mode-buttons">
+        <button id="mode-auto" class="mode-btn active">
+          <span>Auto (On Send)</span>
+        </button>
+        <button id="mode-manual" class="mode-btn">
+          <span>Manual (Alt+C)</span>
+        </button>
+      </div>
+      <div class="mode-hint" id="mode-hint">
+        ⚡ <b>Auto Mode (Default):</b> Prompts >300B auto-compress on Enter/Send.
+      </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Tokens Saved</div>
+        <div class="stat-value" id="tokens-saved">0</div>
+        <div class="stat-sub">Cut from LLM context</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Cost Saved</div>
+        <div class="stat-value green" id="cost-saved">$0.0000</div>
+        <div class="stat-sub">Estimated USD</div>
+      </div>
+    </div>
+
+    <!-- Active Vault & Proxy Info -->
+    <div class="vault-info">
+      <div class="info-row">
+        <span>Active Proxy Target:</span>
+        <span class="code">http://localhost:8000</span>
+      </div>
+      <div class="info-row">
+        <span>Last Vault Hash ID:</span>
+        <span class="code highlight" id="last-vault-id">None</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button id="btn-open-dashboard" class="btn primary">
+        Open Dashboard (localhost:3000)
+      </button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

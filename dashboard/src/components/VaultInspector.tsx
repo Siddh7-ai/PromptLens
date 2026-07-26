@@ -12,7 +12,7 @@ export const VaultInspector: React.FC = () => {
   const fetchVault = async () => {
     setLoading(true);
     try {
-      const resp = await fetch('http://localhost:8000/api/vault');
+      const resp = await fetch('/api/vault');
       if (resp.ok) {
         const data = await resp.json();
         setItems(data.items || []);
@@ -27,9 +27,17 @@ export const VaultInspector: React.FC = () => {
     }
   };
 
+  const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
     fetchVault();
   }, []);
+
+  useEffect(() => {
+    if (selectedItem && textAreaRef.current) {
+      textAreaRef.current.scrollTop = 0;
+    }
+  }, [selectedItem]);
 
   const filteredItems = items.filter(
     (item) =>
@@ -143,10 +151,11 @@ export const VaultInspector: React.FC = () => {
                     Full Uncompressed Raw Payload
                   </label>
                   <textarea
+                    ref={textAreaRef}
                     value={selectedItem.full_content}
                     readOnly
                     rows={18}
-                    className="w-full bg-[#050505] text-[#cccccc] border border-[#1f1f1f] rounded-xl p-3 text-xs font-mono focus:outline-none resize-none"
+                    className="w-full bg-[#050505] text-[#cccccc] border border-[#1f1f1f] rounded-xl p-3 text-xs font-mono focus:outline-none resize-none whitespace-pre overflow-x-auto"
                   />
                 </div>
               </div>

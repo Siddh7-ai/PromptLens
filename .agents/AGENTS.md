@@ -19,3 +19,15 @@
      }
      ```
    - NEVER apply `scroll-behavior: smooth !important` to the wildcard `*` selector, as it forces layout recalculations on every sub-element.
+
+## PromptLens Context Optimization Rule
+
+1. **Automatic Output Compression:**
+   - Whenever executing commands or fetching file contents that produce large outputs (>300 bytes / >100 tokens), pass the content through `src.compress.text_compressor` or `src.compress.json_compressor`.
+   - Save the raw uncompressed output to `src.store.retrieval_store.get_global_store()` under a SHA-256 hash ID.
+
+2. **Reversible Vault Retrieval:**
+   - Use `retrieve_original(id)` with targeted line ranges or regex queries to fetch missing details on-demand without re-processing full raw payloads.
+
+3. **Live Proxy & Dashboard Synchronization:**
+   - Route external HTTP client requests through `http://localhost:8000/v1` to monitor real-time token reduction and inspect vault payloads on `http://localhost:3000`.

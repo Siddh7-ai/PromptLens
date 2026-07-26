@@ -28,7 +28,7 @@ export const App: React.FC = () => {
 
   const fetchStats = async () => {
     try {
-      const resp = await fetch('http://localhost:8000/api/stats');
+      const resp = await fetch('/api/stats');
       if (resp.ok) {
         const data: MetricsSummary = await resp.json();
         setMetrics(data);
@@ -106,7 +106,7 @@ export const App: React.FC = () => {
     setCurrentView(view);
   };
 
-  const vaultCount = metrics.recent_requests.filter((r) => r.retrieval_id !== '-').length;
+  const vaultCount = metrics.active_vault_items ?? metrics.recent_requests.filter((r) => r.retrieval_id !== '-').length;
 
   return (
     <div className="min-h-screen bg-[#000000] text-white flex font-sans antialiased">

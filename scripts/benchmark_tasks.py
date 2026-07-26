@@ -5,10 +5,28 @@ import httpx
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.proxy.server import process_anthropic_payload
+from fastapi.testclient import TestClient
+from src.proxy.server import app, process_anthropic_payload
 from src.compress.text_compressor import get_token_count
 from src.store.retrieval_store import get_global_store
 
+class SmartClient:
+    def __init__(self):
+        self.fallback = TestClient(app)
+        self.use_live = False
+        try:
+            r = httpx.get("http://127.0.0.1:8000/api/stats", timeout=1.0)
+            if r.status_code == 200:
+                self.use_live = True
+        except Exception:
+            self.use_live = False
+
+    def post(self, url, json=None, headers=None):
+        if self.use_live:
+            return httpx.post(f"http://127.0.0.1:8000{url}", json=json, headers=headers, timeout=10.0)
+        return self.fallback.post(url, json=json, headers=headers)
+
+client = SmartClient()
 store = get_global_store()
 FIXTURES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fixtures"))
 
@@ -66,6 +84,13 @@ def run_benchmarks():
     total_baseline = 0
     total_compressed = 0
 
+    use_live = False
+    try:
+        if httpx.get("http://127.0.0.1:8000/api/stats", timeout=1.0).status_code == 200:
+            use_live = True
+    except Exception:
+        use_live = False
+
     for task in BENCHMARK_TASKS:
         file_path = os.path.join(FIXTURES_DIR, task["filename"])
         with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
@@ -86,7 +111,10 @@ def run_benchmarks():
         }
 
         baseline_tokens = get_token_count(json.dumps(payload))
-        processed_payload = process_anthropic_payload(payload)
+        
+        client.post("/v1/messages", json=payload)
+        processed_payload, _ = process_anthropic_payload(json.loads(json.dumps(payload)))
+
         compressed_tokens = get_token_count(json.dumps(processed_payload))
 
         tokens_saved = baseline_tokens - compressed_tokens

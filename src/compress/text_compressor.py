@@ -27,10 +27,10 @@ def get_token_count(text: str) -> int:
         return len(text.split())
 
 
-def generate_structural_index(lines: list[str]) -> str:
+def generate_structural_index(lines: list[str], max_entries: int = 35) -> str:
     """
     Parses code or structured text across Python, JS/TS, Rust, Go, Java, C/C++, SQL, Logs,
-    and Markdown. Includes fallback block-chunking for arbitrary unstructured text.
+    and Markdown. Scans ALL lines to generate a complete Table of Contents.
     """
     sections = []
     current_symbol = None
@@ -42,11 +42,14 @@ def generate_structural_index(lines: list[str]) -> str:
         "export default ", "export function ", "export class ",
         "public ", "private ", "protected ", "static ", "void ",
         "SELECT ", "CREATE TABLE ", "INSERT INTO ", "UPDATE ", "DELETE FROM ",
-        "# ", "## ", "### "
+        "# ", "## ", "### ", "#### "
     )
 
-    # Generic pattern matching for colons, square brackets [LOG], or function signatures
-    generic_pattern = re.compile(r'^(?:[A-Z0-9_\-\.\s]{3,30}:|[\[\(][A-Za-z0-9_\-]+[\]\)]|\w+\s+\w+\s*\(.*\))', re.IGNORECASE)
+    # Generic pattern matching for headers, questions Q1..Q100, Markdown headings
+    generic_pattern = re.compile(
+        r'^(?:#{1,4}\s+|Q\d+[:\s]|SECTION\s+\d+|###?\s+Q)',
+        re.IGNORECASE
+    )
 
     for idx, line in enumerate(lines, 1):
         stripped = line.strip()
@@ -57,7 +60,7 @@ def generate_structural_index(lines: list[str]) -> str:
                 sections.append(f"Lines {symbol_start}-{idx-1}: {current_symbol}")
             symbol_parts = stripped.split(":") if ":" in stripped else [stripped]
             raw_sym = symbol_parts[0].replace("{", "").strip()
-            current_symbol = " ".join(raw_sym.split())[:40]
+            current_symbol = " ".join(raw_sym.split())[:50]
             symbol_start = idx
 
     if current_symbol and len(lines) >= symbol_start:
@@ -65,7 +68,7 @@ def generate_structural_index(lines: list[str]) -> str:
 
     # Fallback Block Chunking for completely unstructured plain text
     if not sections and len(lines) > 20:
-        chunk_size = max(10, len(lines) // 5)
+        chunk_size = max(10, len(lines) // 6)
         for start_idx in range(1, len(lines) + 1, chunk_size):
             end_idx = min(len(lines), start_idx + chunk_size - 1)
             first_words = " ".join(lines[start_idx-1].strip().split()[:5]) or "Content Block"
@@ -74,7 +77,7 @@ def generate_structural_index(lines: list[str]) -> str:
     if not sections:
         return ""
 
-    index_str = "[PromptLens Structural Index]\n" + "\n".join(f"- {sec}" for sec in sections[:10])
+    index_str = "[PromptLens Structural Index]\n" + "\n".join(f"- {sec}" for sec in sections[:max_entries])
     return index_str
 
 
@@ -178,7 +181,9 @@ def compress_text(
             compression_ratio=0.0,
         )
 
-    lines = text.splitlines()
+    # Normalize double-newline padding from rich web editors (Lexical / ProseMirror)
+    clean_text = re.sub(r"(\r?\n\s*){2,}", "\n", text).strip()
+    lines = clean_text.splitlines()
 
     # Step 1: Run log deduplication
     lines = deduplicate_logs(lines)

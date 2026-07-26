@@ -36,7 +36,7 @@ export const RequestStream: React.FC<RequestStreamProps> = ({ logs }) => {
                 </td>
               </tr>
             ) : (
-              logs.map((req) => (
+              logs.slice(0, 20).map((req) => (
                 <tr key={req.id} className="hover:bg-[#121212] transition">
                   <td className="py-3 px-4 font-sans text-[#888888]">{req.timestamp}</td>
                   <td className="py-3 px-4 font-sans font-semibold text-white">
