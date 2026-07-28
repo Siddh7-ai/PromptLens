@@ -1,9 +1,79 @@
 {
-  "total_requests": 34,
-  "total_baseline_tokens": 135761,
-  "total_compressed_tokens": 13831,
+  "total_requests": 41,
+  "total_baseline_tokens": 147242,
+  "total_compressed_tokens": 18052,
   "total_retrievals": 8,
   "request_logs": [
+    {
+      "id": 21,
+      "timestamp": "12:48:58",
+      "path": "/api/compress",
+      "method": "POST",
+      "baseline_tokens": 480,
+      "compressed_tokens": 280,
+      "savings_pct": 41.7,
+      "retrieval_id": "8c766ceb8d8f"
+    },
+    {
+      "id": 21,
+      "timestamp": "12:46:25",
+      "path": "/api/compress",
+      "method": "POST",
+      "baseline_tokens": 480,
+      "compressed_tokens": 280,
+      "savings_pct": 41.7,
+      "retrieval_id": "8c766ceb8d8f"
+    },
+    {
+      "id": 21,
+      "timestamp": "12:46:20",
+      "path": "/api/compress",
+      "method": "POST",
+      "baseline_tokens": 2574,
+      "compressed_tokens": 857,
+      "savings_pct": 66.7,
+      "retrieval_id": "202b61811817"
+    },
+    {
+      "id": 21,
+      "timestamp": "12:30:32",
+      "path": "/api/compress",
+      "method": "POST",
+      "baseline_tokens": 2461,
+      "compressed_tokens": 841,
+      "savings_pct": 65.8,
+      "retrieval_id": "5cf06aba9302"
+    },
+    {
+      "id": 21,
+      "timestamp": "12:30:30",
+      "path": "/api/compress",
+      "method": "POST",
+      "baseline_tokens": 2461,
+      "compressed_tokens": 841,
+      "savings_pct": 65.8,
+      "retrieval_id": "5cf06aba9302"
+    },
+    {
+      "id": 21,
+      "timestamp": "12:29:43",
+      "path": "/api/compress",
+      "method": "POST",
+      "baseline_tokens": 2574,
+      "compressed_tokens": 857,
+      "savings_pct": 66.7,
+      "retrieval_id": "202b61811817"
+    },
+    {
+      "id": 21,
+      "timestamp": "12:20:59",
+      "path": "/api/compress",
+      "method": "POST",
+      "baseline_tokens": 451,
+      "compressed_tokens": 265,
+      "savings_pct": 41.2,
+      "retrieval_id": "6336cc469659"
+    },
     {
       "id": 21,
       "timestamp": "16:31:12",
@@ -132,76 +202,6 @@
       "baseline_tokens": 194,
       "compressed_tokens": 1167,
       "savings_pct": 0.0,
-      "retrieval_id": "92c83f8b5a96"
-    },
-    {
-      "id": 21,
-      "timestamp": "15:50:10",
-      "path": "/v1/messages",
-      "method": "POST",
-      "baseline_tokens": 1130,
-      "compressed_tokens": 928,
-      "savings_pct": 17.9,
-      "retrieval_id": "92c83f8b5a96"
-    },
-    {
-      "id": 20,
-      "timestamp": "15:48:33",
-      "path": "/v1/messages",
-      "method": "POST",
-      "baseline_tokens": 149,
-      "compressed_tokens": 166,
-      "savings_pct": 0.0,
-      "retrieval_id": "dcd3cef1482a"
-    },
-    {
-      "id": 19,
-      "timestamp": "15:48:32",
-      "path": "/v1/messages",
-      "method": "POST",
-      "baseline_tokens": 1392,
-      "compressed_tokens": 774,
-      "savings_pct": 44.4,
-      "retrieval_id": "34ad65f1f7f7"
-    },
-    {
-      "id": 18,
-      "timestamp": "15:48:31",
-      "path": "/v1/messages",
-      "method": "POST",
-      "baseline_tokens": 1,
-      "compressed_tokens": 1,
-      "savings_pct": 0.0,
-      "retrieval_id": "-"
-    },
-    {
-      "id": 17,
-      "timestamp": "15:48:31",
-      "path": "/v1/messages",
-      "method": "POST",
-      "baseline_tokens": 30,
-      "compressed_tokens": 30,
-      "savings_pct": 0.0,
-      "retrieval_id": "-"
-    },
-    {
-      "id": 16,
-      "timestamp": "15:48:30",
-      "path": "/v1/messages",
-      "method": "POST",
-      "baseline_tokens": 182,
-      "compressed_tokens": 1155,
-      "savings_pct": 0.0,
-      "retrieval_id": "92c83f8b5a96"
-    },
-    {
-      "id": 15,
-      "timestamp": "15:48:29",
-      "path": "/v1/messages",
-      "method": "POST",
-      "baseline_tokens": 1120,
-      "compressed_tokens": 918,
-      "savings_pct": 18.0,
       "retrieval_id": "92c83f8b5a96"
     }
   ]

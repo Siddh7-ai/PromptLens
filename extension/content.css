@@ -16,7 +16,11 @@
   cursor: pointer;
   z-index: 99999;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  margin-bottom: 6px;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  margin-left: 2px;
+  align-self: flex-start;
+  width: fit-content;
   user-select: none;
   backdrop-filter: blur(8px);
 }

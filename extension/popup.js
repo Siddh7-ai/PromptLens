@@ -1,6 +1,6 @@
-// PromptLens Chrome Extension Popup Handler (Synchronous 0ms + Live Proxy Sync Edition)
+// PromptLens Chrome Extension Popup Handler (Instant 0ms + Live Proxy Sync Edition)
 
-(function () {
+function initPopup() {
   const tokensSavedEl = document.getElementById('tokens-saved');
   const costSavedEl = document.getElementById('cost-saved');
   const lastVaultIdEl = document.getElementById('last-vault-id');
@@ -11,6 +11,7 @@
   const modeHintEl = document.getElementById('mode-hint');
 
   function setModeUI(mode) {
+    if (!btnManual || !btnAuto || !modeHintEl) return;
     if (mode === 'manual') {
       btnManual.classList.add('active');
       btnAuto.classList.remove('active');
@@ -23,54 +24,91 @@
   }
 
   // 1. Instant 0ms Local Storage Read for zero-delay UI render
-  chrome.storage.local.get(['compression_mode', 'last_vault_id', 'cached_stats', 'tokens_saved'], (store) => {
-    const currentMode = store.compression_mode || 'auto';
-    setModeUI(currentMode);
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get(['compression_mode', 'last_vault_id', 'cached_stats', 'tokens_saved'], (store = {}) => {
+      const s = store || {};
+      const currentMode = s.compression_mode || 'auto';
+      setModeUI(currentMode);
 
-    if (store.last_vault_id) {
-      lastVaultIdEl.textContent = store.last_vault_id;
-    }
+      if (s.last_vault_id && lastVaultIdEl) {
+        lastVaultIdEl.textContent = s.last_vault_id;
+      }
 
-    const cached = store.cached_stats || {};
-    const savedTokens = cached.total_tokens_saved ?? store.tokens_saved ?? 0;
-    const usdSaved = cached.estimated_usd_saved ?? ((savedTokens / 1000000) * 3.0);
+      const cached = s.cached_stats || {};
+      const savedTokens = cached.total_tokens_saved ?? s.tokens_saved ?? 0;
+      const usdSaved = cached.estimated_usd_saved ?? ((savedTokens / 1000000) * 3.0);
 
-    tokensSavedEl.textContent = Number(savedTokens).toLocaleString();
-    costSavedEl.textContent = `$${Number(usdSaved).toFixed(4)}`;
-  });
+      if (tokensSavedEl) tokensSavedEl.textContent = Number(savedTokens).toLocaleString();
+      if (costSavedEl) costSavedEl.textContent = `$${Number(usdSaved).toFixed(4)}`;
+    });
+  }
 
-  // 2. Background async fetch from proxy stats endpoint to sync live numbers
-  fetch('http://localhost:8000/api/stats')
+  // 2. Non-blocking background fetch with 800ms abort controller timeout
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeoutId = setTimeout(() => controller?.abort(), 800);
+
+  fetch('http://localhost:8000/api/stats', { signal: controller?.signal })
     .then((res) => (res.ok ? res.json() : null))
     .then((data) => {
+      clearTimeout(timeoutId);
       if (data) {
-        tokensSavedEl.textContent = Number(data.total_tokens_saved).toLocaleString();
-        costSavedEl.textContent = `$${Number(data.estimated_usd_saved).toFixed(4)}`;
-        chrome.storage.local.set({
-          tokens_saved: data.total_tokens_saved,
-          cached_stats: {
-            total_tokens_saved: data.total_tokens_saved,
-            estimated_usd_saved: data.estimated_usd_saved
-          }
-        });
+        if (tokensSavedEl) tokensSavedEl.textContent = Number(data.total_tokens_saved).toLocaleString();
+        if (costSavedEl) costSavedEl.textContent = `$${Number(data.estimated_usd_saved).toFixed(4)}`;
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.set({
+            tokens_saved: data.total_tokens_saved,
+            cached_stats: {
+              total_tokens_saved: data.total_tokens_saved,
+              estimated_usd_saved: data.estimated_usd_saved
+            }
+          });
+        }
       }
     })
-    .catch(() => {});
+    .catch(() => {
+      clearTimeout(timeoutId);
+    });
 
   // Event Listeners
-  btnManual.addEventListener('click', () => {
-    chrome.storage.local.set({ compression_mode: 'manual' }, () => {
-      setModeUI('manual');
+  if (btnManual) {
+    btnManual.addEventListener('click', () => {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ compression_mode: 'manual' }, () => {
+          setModeUI('manual');
+        });
+      } else {
+        setModeUI('manual');
+      }
     });
-  });
+  }
 
-  btnAuto.addEventListener('click', () => {
-    chrome.storage.local.set({ compression_mode: 'auto' }, () => {
-      setModeUI('auto');
+  if (btnAuto) {
+    btnAuto.addEventListener('click', () => {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ compression_mode: 'auto' }, () => {
+          setModeUI('auto');
+        });
+      } else {
+        setModeUI('auto');
+      }
     });
-  });
+  }
 
-  btnOpenDashboard.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'http://localhost:3000' });
-  });
-})();
+  if (btnOpenDashboard) {
+    btnOpenDashboard.addEventListener('click', () => {
+      if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+        chrome.tabs.create({ url: 'http://localhost:3000' });
+      } else {
+        window.open('http://localhost:3000', '_blank');
+      }
+    });
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPopup);
+} else {
+  initPopup();
+}
+
+

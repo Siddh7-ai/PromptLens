@@ -340,16 +340,18 @@
     const pill = document.getElementById('promptlens-pill');
     if (pill) pill.querySelector('span').textContent = 'Compressing...';
 
-    const handleSuccess = (resText, savingsPct, vaultId) => {
-      setInputValue(inputEl, resText);
+    // 1. Instant 0ms local JavaScript compression for zero latency
+    fallbackLocalCompress(rawText).then((instantRes) => {
+      setInputValue(inputEl, instantRes.compressed_text);
+
       if (pill) {
         pill.className = 'promptlens-compress-pill promptlens-compressed';
-        pill.querySelector('span').textContent = `✓ Cut ${savingsPct || 0}% Tokens (ID: ${vaultId || 'vault'})`;
+        pill.querySelector('span').textContent = `✓ Cut ${instantRes.savings_pct || 0}% Tokens (ID: ${instantRes.retrieval_id || 'vault'})`;
       }
       if (currentMode === 'auto') {
-        showSideIndicator('PromptLens Auto-Compressed', `Cut ${savingsPct || 0}% tokens in background!`, vaultId);
+        showSideIndicator('PromptLens Auto-Compressed', `Cut ${instantRes.savings_pct || 0}% tokens in background!`, instantRes.retrieval_id);
       } else {
-        showToast(`⚡ Compressed! Cut ${savingsPct || 0}% tokens (Vault ID: ${vaultId || 'saved'})`);
+        showToast(`⚡ Compressed! Cut ${instantRes.savings_pct || 0}% tokens (Vault ID: ${instantRes.retrieval_id || 'saved'})`);
       }
 
       if (pillResetTimeout) clearTimeout(pillResetTimeout);
@@ -357,37 +359,65 @@
         updatePillText();
       }, 3000);
 
-      setTimeout(() => {
-        if (onComplete) {
-          onComplete();
-        } else if (currentMode === 'auto') {
-          setTimeout(triggerSendButtonClick, 150);
+      // 2. Fire-and-forget async background sync to Python vault (never blocks UI)
+      try {
+        if (chrome.runtime && chrome.runtime.id) {
+          chrome.runtime.sendMessage(
+            { action: 'compress_text', content: rawText, precomputed_id: instantRes.retrieval_id },
+            () => {}
+          );
         }
-      }, 100);
-    };
-
-    try {
-      if (!chrome.runtime || !chrome.runtime.id) {
-        throw new Error('Extension context invalidated');
+      } catch (err) {
+        console.debug('PromptLens background sync skipped:', err);
       }
 
-      chrome.runtime.sendMessage(
-        { action: 'compress_text', content: rawText },
-        async (response) => {
-          if (chrome.runtime.lastError || !response || !response.success) {
-            const fallback = await fallbackLocalCompress(rawText);
-            handleSuccess(fallback.compressed_text, fallback.savings_pct, fallback.retrieval_id);
-          } else {
-            handleSuccess(response.compressed_text, response.savings_pct, response.retrieval_id);
+      if (onComplete) {
+        onComplete();
+      } else if (currentMode === 'auto') {
+        setTimeout(triggerSendButtonClick, 50);
+      }
+    });
+  }
+
+  function getPromptContainer(inputEl) {
+    const host = window.location.hostname;
+
+    // 1. Claude.ai positioning target
+    if (host.includes('claude.ai')) {
+      const fieldset = inputEl.closest('fieldset');
+      if (fieldset) return fieldset;
+
+      const form = inputEl.closest('form');
+      if (form) return form;
+
+      const proseMirror = inputEl.closest('.ProseMirror') || inputEl.closest('[contenteditable="true"]');
+      if (proseMirror) {
+        let parent = proseMirror.parentElement;
+        while (parent && parent.tagName !== 'BODY') {
+          if (parent.tagName === 'FORM' || parent.tagName === 'FIELDSET' || parent.classList.contains('relative')) {
+            return parent;
           }
+          parent = parent.parentElement;
         }
-      );
-    } catch (err) {
-      console.warn('PromptLens Context Invalidated fallback:', err);
-      fallbackLocalCompress(rawText).then((fallback) => {
-        handleSuccess(fallback.compressed_text, fallback.savings_pct, fallback.retrieval_id);
-      });
+      }
     }
+
+    // 2. Gemini (gemini.google.com) positioning target
+    if (host.includes('gemini.google.com')) {
+      const richTextarea = inputEl.closest('rich-textarea');
+      if (richTextarea) {
+        const inputArea = richTextarea.closest('.input-area-container') || richTextarea.closest('.chat-input-container') || richTextarea.parentElement;
+        if (inputArea) return inputArea;
+      }
+      const inputArea = inputEl.closest('.input-area-container') || inputEl.closest('.chat-input-container') || inputEl.closest('.input-area');
+      if (inputArea) return inputArea;
+    }
+
+    // 3. ChatGPT / DeepSeek / OpenRouter positioning target
+    const form = inputEl.closest('form');
+    if (form) return form;
+
+    return inputEl.closest('[class*="input-container"]') || inputEl.closest('[class*="textarea"]') || inputEl.parentElement;
   }
 
   function injectPromptLensPill() {
@@ -434,9 +464,12 @@
       }, true);
     }
 
-    const outerContainer = (form && form.parentElement) || inputEl.parentElement;
-    if (outerContainer) {
-      outerContainer.insertBefore(pill, outerContainer.firstChild);
+    const targetContainer = getPromptContainer(inputEl);
+    if (targetContainer && targetContainer.parentElement) {
+      targetContainer.parentElement.insertBefore(pill, targetContainer);
+      updatePillText();
+    } else if (inputEl.parentElement) {
+      inputEl.parentElement.insertBefore(pill, inputEl);
       updatePillText();
     }
   }

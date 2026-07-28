@@ -164,64 +164,66 @@ async function localCompressText(text, headCount = 10, tailCount = 10) {
 }
 
 // Event listeners for text compression & vault payload fetching
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.get(['compression_mode'], (result) => {
+    if (!result.compression_mode) {
+      chrome.storage.local.set({ compression_mode: 'auto', tokens_saved: 0, requests_count: 0 });
+    }
+  });
+});
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (!request || !request.action) {
+    sendResponse({ success: false, error: 'No action specified' });
+    return false;
+  }
+
+  if (request.action === 'ping') {
+    sendResponse({ success: true, status: 'active' });
+    return false;
+  }
+
   if (request.action === 'compress_text') {
-    // 1. Send API request directly to backend for canonical Vault storage and metrics
-    fetch(`${PROMPTLENS_API_BASE}/api/compress`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: request.content })
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('API status ' + res.status);
-        return res.json();
-      })
-      .then((data) => {
-        chrome.storage.local.get(['tokens_saved', 'requests_count'], (store) => {
-          const currentSaved = store.tokens_saved || 0;
-          const currentReqs = store.requests_count || 0;
-          const savedTokens = Math.max(0, (data.original_tokens || 0) - (data.compressed_tokens || 0));
-          const newTotalSaved = currentSaved + savedTokens;
-
-          chrome.storage.local.set({
-            tokens_saved: newTotalSaved,
-            requests_count: currentReqs + 1,
-            last_vault_id: data.retrieval_id,
-            cached_stats: {
-              total_tokens_saved: newTotalSaved,
-              estimated_usd_saved: (newTotalSaved / 1000000) * 3.0
-            }
-          });
-        });
-
-        sendResponse({
-          success: true,
-          compressed_text: data.compressed_text,
-          retrieval_id: data.retrieval_id,
-          savings_pct: data.savings_pct,
-          original_tokens: data.original_tokens,
-          compressed_tokens: data.compressed_tokens
-        });
-      })
-      .catch((err) => {
-        console.warn('Backend proxy fetch offline/slow, fallback to local JS parity compressor:', err);
-        localCompressText(request.content).then((localResult) => {
-          // Fire background async sync attempt to persist in python vault
-          fetch(`${PROMPTLENS_API_BASE}/api/compress`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: request.content })
-          }).catch(() => {});
-
-          sendResponse({
-            success: true,
-            compressed_text: localResult.compressed_text,
-            retrieval_id: localResult.retrieval_id,
-            savings_pct: localResult.savings_pct,
-            fallback_mode: true
-          });
-        });
+    // 1. Compute local JS compression instantly (0ms) and return response immediately
+    localCompressText(request.content).then((localResult) => {
+      sendResponse({
+        success: true,
+        compressed_text: localResult.compressed_text,
+        retrieval_id: localResult.retrieval_id,
+        savings_pct: localResult.savings_pct,
+        original_tokens: Math.ceil(request.content.length / 4),
+        compressed_tokens: Math.ceil(localResult.compressed_text.length / 4)
       });
+
+      // 2. Fire-and-forget background sync to FastAPI proxy vault without blocking response
+      fetch(`${PROMPTLENS_API_BASE}/api/compress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: request.content })
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) {
+            chrome.storage.local.get(['tokens_saved', 'requests_count'], (store = {}) => {
+              const currentSaved = store.tokens_saved || 0;
+              const currentReqs = store.requests_count || 0;
+              const savedTokens = Math.max(0, (data.original_tokens || 0) - (data.compressed_tokens || 0));
+              const newTotalSaved = currentSaved + savedTokens;
+
+              chrome.storage.local.set({
+                tokens_saved: newTotalSaved,
+                requests_count: currentReqs + 1,
+                last_vault_id: data.retrieval_id,
+                cached_stats: {
+                  total_tokens_saved: newTotalSaved,
+                  estimated_usd_saved: (newTotalSaved / 1000000) * 3.0
+                }
+              });
+            });
+          }
+        })
+        .catch(() => {});
+    });
 
     return true; // Keep async response channel open
   }
@@ -244,4 +246,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     return true; // Keep channel open
   }
+
+  sendResponse({ success: false, error: 'Unknown action: ' + request.action });
+  return false;
 });
