@@ -27,7 +27,7 @@ ALLOWED_ORIGIN_REGEX = r"^(https://(chatgpt\.com|chat\.openai\.com|claude\.ai|ge
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=ALLOWED_ORIGIN_REGEX,
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
