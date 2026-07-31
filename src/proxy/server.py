@@ -21,10 +21,12 @@ TARGET_BASE_URL = os.getenv("TARGET_BASE_URL", "https://api.anthropic.com").rstr
 
 app = FastAPI(title="PromptLens Proxy", version="0.1.0")
 
-# Enable CORS for local dashboard and browser extensions (ChatGPT, Claude.ai, etc.)
+# Explicit CORS origin pattern matching manifest.json host_permissions + local dashboard ports
+ALLOWED_ORIGIN_REGEX = r"^(https://(chatgpt\.com|chat\.openai\.com|claude\.ai|gemini\.google\.com|chat\.deepseek\.com|openrouter\.ai)|http://(localhost|127\.0\.0\.1):(3000|8000)|chrome-extension://[a-z0-9]+)$"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r".*",
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
