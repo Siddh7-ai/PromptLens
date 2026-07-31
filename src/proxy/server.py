@@ -9,7 +9,7 @@ from pydantic import BaseModel
 
 
 from src.compress.json_compressor import compress_json
-from src.compress.text_compressor import compress_text
+from src.compress.text_compressor import compress_text, get_token_count
 from src.store.retrieval_store import get_global_store
 from src.proxy.stats import get_global_metrics
 from src.proxy.dashboard_html import DASHBOARD_HTML
@@ -21,10 +21,16 @@ TARGET_BASE_URL = os.getenv("TARGET_BASE_URL", "https://api.anthropic.com").rstr
 
 app = FastAPI(title="PromptLens Proxy", version="0.1.0")
 
-# Enable CORS for React dashboard on port 3000
+# Enable CORS for local development ports.
+# Note: Update allow_origins if dashboard is deployed in a multi-host container environment.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,26 +110,36 @@ def _compress_tool_content(content: str) -> tuple[str, str | None, float]:
     if len(content) < MIN_COMPRESS_BYTES:
         return content, None, 0.0
 
-    # Try JSON compression first
     try:
-        json_obj = json.loads(content)
-        if isinstance(json_obj, (dict, list)):
-            result = compress_json(content)
-            if result.is_compressed:
-                stored_id = retrieval_store.save(content)
-                savings_pct = f"{(result.compression_ratio * 100):.1f}%"
-                notice = f"\n\n[PromptLens: Content compressed (saved {savings_pct} tokens). Original ID: {stored_id}. Call retrieve_original(id=\"{stored_id}\") if full data is required.]"
-                return result.compressed_str + notice, stored_id, result.compression_ratio
-    except Exception:
-        pass
+        # Try JSON compression first
+        try:
+            json_obj = json.loads(content)
+            if isinstance(json_obj, (dict, list)):
+                result = compress_json(content)
+                if result.is_compressed:
+                    stored_id = retrieval_store.save(content)
+                    savings_pct = f"{(result.compression_ratio * 100):.1f}%"
+                    notice = f"\n\n[PromptLens: Content compressed ({savings_pct} saved). Original ID: {stored_id}. Use retrieve_original(id=\"{stored_id}\")]"
+                    candidate_str = result.compressed_str + notice
+                    if get_token_count(candidate_str) < result.original_tokens:
+                        net_ratio = round(1.0 - (get_token_count(candidate_str) / result.original_tokens), 4)
+                        return candidate_str, stored_id, net_ratio
+        except Exception:
+            pass
 
-    # Fallback to Text compression
-    result = compress_text(content)
-    if result.is_compressed:
-        stored_id = retrieval_store.save(content)
-        savings_pct = f"{(result.compression_ratio * 100):.1f}%"
-        notice = f"\n\n[PromptLens: Content compressed (saved {savings_pct} tokens). Original ID: {stored_id}. Call retrieve_original(id=\"{stored_id}\") if full data is required.]"
-        return result.compressed_str + notice, stored_id, result.compression_ratio
+        # Fallback to Text compression
+        result = compress_text(content)
+        if result.is_compressed:
+            stored_id = retrieval_store.save(content)
+            savings_pct = f"{(result.compression_ratio * 100):.1f}%"
+            notice = f"\n\n[PromptLens: Content compressed ({savings_pct} saved). Original ID: {stored_id}. Use retrieve_original(id=\"{stored_id}\")]"
+            candidate_str = result.compressed_str + notice
+            if get_token_count(candidate_str) < result.original_tokens:
+                net_ratio = round(1.0 - (get_token_count(candidate_str) / result.original_tokens), 4)
+                return candidate_str, stored_id, net_ratio
+    except Exception:
+        # Safety net: on any decoding or compression exception, return original content
+        return content, None, 0.0
 
     return content, None, 0.0
 
@@ -189,7 +205,7 @@ def process_anthropic_payload(payload: dict) -> tuple[dict, str | None]:
                             # Compress tool result content
                             raw_content = block.get("content")
                             if isinstance(raw_content, str):
-                                if retrieval_store.has(raw_content):
+                                if len(raw_content) == 12 and retrieval_store.has(raw_content):
                                     block["content"] = retrieval_store.get(raw_content)
                                     metrics_tracker.record_retrieval()
                                     last_stored_id = raw_content

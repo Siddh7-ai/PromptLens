@@ -87,10 +87,14 @@ def find_error_anchors(lines: list[str], start_line_offset: int = 1) -> list[tup
     with accurate 1-indexed line numbers.
     """
     anchors = []
-    error_keywords = ("error", "exception", "fail", "warning", "fatal", "traceback", "critical")
+    error_keywords = (
+        "error", "exception", "fail", "warning", "fatal", "traceback", "critical",
+        "keyerror", "valueerror", "typeerror", "assertionerror", "runtimeerror",
+        "attributeerror", "syntaxerror", "nameerror", "indexerror"
+    )
     for idx, line in enumerate(lines):
         line_lower = line.lower()
-        if any(kw in line_lower for kw in error_keywords):
+        if any(kw in line_lower for kw in error_keywords) or re.search(r'\b\w+(?:Error|Exception)\b', line):
             anchors.append((start_line_offset + idx, line))
             if len(anchors) >= 10:
                 break
@@ -125,24 +129,42 @@ def deduplicate_logs(lines: list[str]) -> list[str]:
     return deduped
 
 
-def _compress_stack_trace(lines: list[str], retrieval_id: str) -> list[str]:
+def _compress_stack_trace(lines: list[str], retrieval_id: str, anchor_block: str = "") -> list[str]:
     """
     Compresses Python stack traces or pytest failure outputs by keeping
-    the initial traceback header, top 4 lines, bottom 4 lines, and error line.
+    the initial traceback header, bottom 3 lines, and pinned error anchors.
     """
-    if len(lines) <= 12:
+    if len(lines) <= 6:
         return lines
 
-    head = lines[:4]
-    tail = lines[-4:]
-    omitted = len(lines) - 8
+    head = lines[:2]
+    tail = lines[-3:]
+    omitted = len(lines) - 5
 
-    marker = f"--- [PROMPT LENS TRUNCATED {omitted} stack trace lines. Use retrieve_original('{retrieval_id}') for full log] ---"
-    return head + [marker] + tail
-
+    marker = f"--- [PromptLens Truncated {omitted} lines. ID: {retrieval_id}] ---"
+    middle = [marker]
+    if anchor_block:
+        middle.append(anchor_block.strip())
+    return head + middle + tail
 
 
 from src.store.retrieval_store import RetrievalStore, get_global_store
+
+
+def estimate_duplicate_line_ratio(text: str) -> float:
+    """Calculates the ratio of duplicated lines or repetitive prefix lines to total non-empty lines."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if not lines:
+        return 0.0
+    unique_lines = set(lines)
+    exact_ratio = (len(lines) - len(unique_lines)) / len(lines)
+
+    # Check prefix duplication (e.g. "npm error ", "[DEBUG]", timestamps)
+    prefixes = [line.split()[0] if line.split() else "" for line in lines]
+    unique_prefixes = set(p for p in prefixes if p)
+    prefix_ratio = (len(lines) - len(unique_prefixes)) / len(lines) if len(lines) > 3 else 0.0
+
+    return max(exact_ratio, prefix_ratio)
 
 
 def compress_text(
@@ -170,8 +192,19 @@ def compress_text(
     original_tokens = get_token_count(text)
     retrieval_id = hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
 
-    # Small text below token threshold
-    if original_tokens < min_token_threshold:
+    # Adaptive threshold & sizing: if duplicate line ratio >= 0.25 (e.g., repeated npm build errors/warnings), lower token threshold & head/tail line counts
+    duplicate_ratio = estimate_duplicate_line_ratio(text)
+    effective_threshold = min_token_threshold
+    effective_head = head_lines
+    effective_tail = tail_lines
+
+    if duplicate_ratio >= 0.25:
+        effective_threshold = max(30, int(min_token_threshold * 0.4))
+        effective_head = min(4, head_lines)
+        effective_tail = min(4, tail_lines)
+
+    # Small text below adaptive token threshold
+    if original_tokens < effective_threshold:
         return TextCompressionResult(
             compressed_str=text,
             retrieval_id=retrieval_id,
@@ -187,7 +220,13 @@ def compress_text(
 
     # Step 1: Run log deduplication
     lines = deduplicate_logs(lines)
-    min_required_lines = head_lines + tail_lines + 2
+
+    # Adaptive head/tail sizing for shorter inputs
+    if duplicate_ratio < 0.25 and len(lines) < (head_lines + tail_lines + 5) and len(lines) >= 10:
+        effective_head = max(2, len(lines) // 4)
+        effective_tail = max(2, len(lines) // 4)
+
+    min_required_lines = effective_head + effective_tail + 1
 
     # Check if lines exceed minimum required lines for head-tail truncation
     if len(lines) <= min_required_lines:
@@ -200,12 +239,12 @@ def compress_text(
             compression_ratio=(1.0 - (get_token_count("\n".join(lines)) / original_tokens)) if original_tokens > 0 else 0.0,
         )
 
-    # Step 2: Generate Structural Index ToC
-    toc_index = generate_structural_index(lines)
+    # Step 2: Generate Structural Index ToC for structured text / code (>= 15 lines)
+    toc_index = generate_structural_index(lines) if len(lines) >= 15 else ""
 
     # Step 3: Find Error Anchors in Middle Lines
-    middle_lines = lines[head_lines:-tail_lines]
-    anchors = find_error_anchors(middle_lines, start_line_offset=head_lines + 1)
+    middle_lines = lines[effective_head:-effective_tail]
+    anchors = find_error_anchors(middle_lines, start_line_offset=effective_head + 1)
     anchor_block = ""
     if anchors:
         anchor_lines_str = "\n".join(f"  Line {line_num}: {text_line}" for line_num, text_line in anchors)
@@ -213,24 +252,22 @@ def compress_text(
 
     # Check for stack trace specific optimization
     if "Traceback (most recent call last):" in text or "FAILURES" in text or "ERRORS" in text:
-        compressed_lines = _compress_stack_trace(lines, retrieval_id)
+        compressed_lines = _compress_stack_trace(lines, retrieval_id, anchor_block)
+        compressed_str = "\n".join(compressed_lines)
     else:
         # Standard Head-Tail Truncation with ToC and Anchors
-        head = lines[:head_lines]
-        tail = lines[-tail_lines:]
-        omitted = len(lines) - (head_lines + tail_lines)
+        head = lines[:effective_head]
+        tail = lines[-effective_tail:]
+        omitted = len(lines) - (effective_head + effective_tail)
         marker = (
             f"--- [PROMPT LENS TRUNCATED {omitted} lines (total: {len(lines)}). "
             f"Use retrieve_original('{retrieval_id}') for full text] ---"
         )
         compressed_lines = head + [marker] + tail
-
-    prefix = (toc_index + "\n\n") if toc_index else ""
-    suffix = (anchor_block + "\n") if anchor_block else ""
-
-    compressed_str = prefix + "\n".join(compressed_lines) + suffix
+        prefix = (toc_index + "\n\n") if toc_index else ""
+        suffix = (anchor_block + "\n") if anchor_block else ""
+        compressed_str = prefix + "\n".join(compressed_lines) + suffix
     compressed_tokens = get_token_count(compressed_str)
-
 
     if compressed_tokens >= original_tokens:
         return TextCompressionResult(

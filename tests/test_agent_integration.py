@@ -53,7 +53,7 @@ def test_real_agent_multiturn_integration():
     with patch("httpx.AsyncClient.send", new_callable=AsyncMock) as mock_send:
         mock_send.return_value = mock_resp_1
 
-        response = client.post("/v1/messages", json=turn1_payload)
+        response = client.post("/v1/messages", json=json.loads(json.dumps(turn1_payload)))
         assert response.status_code == 200
 
         called_req = mock_send.call_args[0][0]
@@ -105,3 +105,49 @@ def test_real_agent_multiturn_integration():
 
         retrieved = upstream_payload_2["messages"][2]["content"][0]["content"]
         assert retrieved == large_log
+
+
+def test_50_turn_session_stress_test():
+    """
+    Simulates a 50-turn agent session with varying tool outputs.
+    Asserts vault byte footprint stays bounded and cumulative metrics remain consistent.
+    """
+    from src.proxy.server import metrics_tracker
+
+    initial_vault_size = store.size()
+    initial_req_count = metrics_tracker.total_requests
+
+    mock_resp = httpx.Response(
+        status_code=200,
+        headers={"content-type": "application/json"},
+        content=b'{"id": "resp_stress", "role": "assistant", "content": [{"type": "text", "text": "ok"}]}'
+    )
+
+    with patch("httpx.AsyncClient.send", new_callable=AsyncMock) as mock_send:
+        mock_send.return_value = mock_resp
+
+        for i in range(50):
+            sample_content = f"Turn {i} log output data with errors:\n" + ("Log message info line...\n" * 25)
+            payload = {
+                "model": "claude-3-5-sonnet-20241022",
+                "max_tokens": 1024,
+                "tools": [{"name": "bash", "description": "tool", "input_schema": {}}],
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [{"type": "tool_result", "tool_use_id": f"t_{i}", "content": sample_content}]
+                    }
+                ]
+            }
+
+            resp = client.post("/v1/messages", json=payload)
+            assert resp.status_code == 200
+
+    new_vault_entries = store.size() - initial_vault_size
+    total_vault_bytes = sum(len(v.encode("utf-8")) if isinstance(v, str) else len(str(v)) for v in store._store.values())
+
+    # Bound check: 50 turns should not add more than 50 vault entries and < 500KB total storage
+    assert new_vault_entries <= 50
+    assert total_vault_bytes < 500_000
+    assert metrics_tracker.total_requests >= initial_req_count + 50
+

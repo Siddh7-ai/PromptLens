@@ -58,3 +58,31 @@ def test_small_json_under_threshold():
     # Below token threshold, should return minified version without truncation
     assert result.compressed_str == '{"status":"ok","code":200}'
     assert len(result.retrieval_id) == 12
+
+
+def test_retrievable_json_depth_truncation():
+    from src.store.retrieval_store import get_global_store
+
+    store = get_global_store()
+    deep_data = {}
+    curr = deep_data
+    for i in range(20):
+        curr["nested"] = {}
+        curr = curr["nested"]
+    curr["leaf"] = "deep_value"
+
+    raw_json = json.dumps(deep_data)
+    result = compress_json(raw_json, min_token_threshold=10, max_depth=5, store=store)
+
+    assert result.is_compressed is True
+    compressed_obj = json.loads(result.compressed_str)
+
+    node = compressed_obj
+    for _ in range(5):
+        node = node["nested"]
+
+    assert node.get("_promptlens_truncated_depth") is True
+    vault_id = node.get("_retrieval_id")
+    assert vault_id is not None
+    assert store.has(vault_id) is True
+

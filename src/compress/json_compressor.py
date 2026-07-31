@@ -86,15 +86,34 @@ def _generate_array_skimming_summary(items: list) -> dict:
     return summary
 
 
-def _compress_node(node: Any, retrieval_id: str, max_array_items: int = 3) -> Any:
+def _compress_node(
+    node: Any,
+    retrieval_id: str,
+    max_array_items: int = 3,
+    depth: int = 0,
+    max_depth: int = 15,
+    store: Any = None,
+) -> Any:
     """
     Recursively compresses JSON nodes by truncating arrays larger than max_array_items
-    and appending a truncation notice with a retrieval key and key skimming summary.
+    and truncating branches exceeding max_depth with a retrievable vault ID.
     """
+    if depth >= max_depth:
+        node_str = json.dumps(node, sort_keys=True) if isinstance(node, (dict, list)) else str(node)
+        vault_id = hashlib.sha256(node_str.encode("utf-8")).hexdigest()[:12]
+        if store:
+            store.save(node_str, vault_id)
+        return {
+            "_promptlens_truncated_depth": True,
+            "_type": type(node).__name__,
+            "_retrieval_id": vault_id,
+            "notice": f"Branch exceeded max depth ({max_depth}). Use retrieve_original('{vault_id}') to view sub-tree.",
+        }
+
     if isinstance(node, list):
         if len(node) > max_array_items:
             compressed_list = [
-                _compress_node(item, retrieval_id, max_array_items)
+                _compress_node(item, retrieval_id, max_array_items, depth + 1, max_depth, store)
                 for item in node[:max_array_items]
             ]
             omitted = len(node) - max_array_items
@@ -111,11 +130,14 @@ def _compress_node(node: Any, retrieval_id: str, max_array_items: int = 3) -> An
             compressed_list.append(marker)
             return compressed_list
         else:
-            return [_compress_node(item, retrieval_id, max_array_items) for item in node]
+            return [
+                _compress_node(item, retrieval_id, max_array_items, depth + 1, max_depth, store)
+                for item in node
+            ]
 
     elif isinstance(node, dict):
         return {
-            k: _compress_node(v, retrieval_id, max_array_items)
+            k: _compress_node(v, retrieval_id, max_array_items, depth + 1, max_depth, store)
             for k, v in node.items()
         }
     else:
@@ -130,6 +152,7 @@ def compress_json(
     max_array_items: int = 3,
     min_token_threshold: int = 50,
     store: Any = None,
+    max_depth: int = 15,
 ) -> JSONCompressionResult:
     """
     Compresses a JSON string using rule-based array truncation and whitespace minification.
@@ -139,6 +162,7 @@ def compress_json(
         max_array_items: Maximum items to retain in arrays before truncating.
         min_token_threshold: Minimum tokens required to trigger structural compression.
         store: Optional RetrievalStore instance. Defaults to get_global_store().
+        max_depth: Maximum recursion depth before branch truncation.
 
     Returns:
         JSONCompressionResult object with compressed string and token metrics.
@@ -175,7 +199,9 @@ def compress_json(
         )
 
     # Structural compression
-    compressed_data = _compress_node(data, retrieval_id, max_array_items=max_array_items)
+    compressed_data = _compress_node(
+        data, retrieval_id, max_array_items=max_array_items, depth=0, max_depth=max_depth, store=store
+    )
     compressed_str = json.dumps(compressed_data, separators=(",", ":"))
     compressed_tokens = get_token_count(compressed_str)
 
@@ -205,3 +231,4 @@ def compress_json(
         is_compressed=True,
         compression_ratio=ratio,
     )
+

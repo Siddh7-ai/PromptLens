@@ -1,24 +1,65 @@
 npm info it worked if it ends with ok
 npm info using npm@8.19.2
-npm info using node@v16.18.0
+npm info using node@v18.16.0
 npm info config registry = "https://registry.npmjs.org/"
 npm info config loglevel = "info"
-npm http fetch GET 304 https://registry.npmjs.org/vite 152ms (from cache)
-npm http fetch GET 304 https://registry.npmjs.org/typescript 118ms (from cache)
-npm http fetch GET 304 https://registry.npmjs.org/react 125ms (from cache)
-npm http fetch GET 304 https://registry.npmjs.org/react-dom 140ms (from cache)
 
-> prompt-lens-dashboard@0.1.0 build
-> tsc && vite build
+npm WARN deprecated inflight@1.0.6: This module is not supported, and leaks memory.
+npm WARN deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm WARN deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm WARN deprecated tar@6.2.1: Please upgrade to tar v7 or later
+npm WARN deprecated chokidar@2.1.8: Chokidar 2 will not receive security updates.
+npm WARN deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
+npm WARN deprecated urllib@2.41.0: Please upgrade to urllib v3 or later
+npm WARN deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained
+npm WARN deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained
+npm WARN deprecated inflight@1.0.6: This module is not supported, and leaks memory.
+npm WARN deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm WARN deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm WARN deprecated tar@6.2.1: Please upgrade to tar v7 or later
+npm WARN deprecated chokidar@2.1.8: Chokidar 2 will not receive security updates.
+npm WARN deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
+npm WARN deprecated urllib@2.41.0: Please upgrade to urllib v3 or later
+npm WARN deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained
+npm WARN deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained
+npm WARN deprecated inflight@1.0.6: This module is not supported, and leaks memory.
+npm WARN deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm WARN deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm WARN deprecated tar@6.2.1: Please upgrade to tar v7 or later
+npm WARN deprecated chokidar@2.1.8: Chokidar 2 will not receive security updates.
+npm WARN deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
+npm WARN deprecated urllib@2.41.0: Please upgrade to urllib v3 or later
+npm WARN deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained
+npm WARN deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained
+npm WARN deprecated inflight@1.0.6: This module is not supported, and leaks memory.
+npm WARN deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm WARN deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm WARN deprecated tar@6.2.1: Please upgrade to tar v7 or later
+npm WARN deprecated chokidar@2.1.8: Chokidar 2 will not receive security updates.
+npm WARN deprecated source-map-url@0.4.1: See https://github.com/lydell/source-map-url#deprecated
+npm WARN deprecated urllib@2.41.0: Please upgrade to urllib v3 or later
+npm WARN deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained
+npm WARN deprecated core-js@2.6.12: core-js@<3.23.3 is no longer maintained
 
-vite v3.2.3 building for production...
-transforming...
-✓ 320 modules transformed.
-rendering chunks...
+> promptlens-dashboard@1.0.0 build
+> tsc --noEmit && vite build --config vite.config.ts
 
-dist/index.html                  0.48 kB
-dist/assets/index.7d86f7b1.css   4.12 kB │ gzip: 1.20 kB
-dist/assets/index.9fa1a3ef.js  142.10 kB │ gzip: 46.12 kB
+vite v4.4.9 building for production...
+transforming (1)...
+transforming (45)...
+transforming (120)...
+transforming (240)...
+transforming (450)...
+transforming (680)...
+✓ 684 modules transformed.
 
-✓ built in 2.15s
+[warning] @rollup/plugin-commonjs: Unused export default in module src/utils/formatter.js
+[warning] @typescript-eslint: Type declaration file missing for module 'legacy-logger'
+
+dist/index.html                           0.54 kB │ gzip:  0.34 kB
+dist/assets/vendor-d87f91a2.js         1,245.80 kB │ gzip: 390.12 kB
+dist/assets/index-9fa1a3ef.js            184.20 kB │ gzip:  56.40 kB
+dist/assets/index-7d86f7b1.css            12.80 kB │ gzip:   3.40 kB
+
+✓ built in 4.82s
 npm info ok

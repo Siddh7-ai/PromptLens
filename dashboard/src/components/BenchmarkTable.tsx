@@ -2,11 +2,11 @@ import React from 'react';
 import { BenchmarkTask } from '../types';
 
 const INITIAL_BENCHMARKS: BenchmarkTask[] = [
-  { id: 1, name: 'Python Pytest Failure Trace', category: 'Keeps failures and errors, drops passing noise', baseline: 896, compressed: 238, savings_pct: 73.4, correctness: '100% Pass' },
-  { id: 2, name: 'JSON arrays (tool outputs)', category: 'Statistical analysis keeps errors, anomalies, boundaries', baseline: 104569, compressed: 501, savings_pct: 99.5, correctness: '100% Pass' },
-  { id: 3, name: 'Git diffs', category: 'Preserves change hunks, drops unchanged context', baseline: 473, compressed: 189, savings_pct: 60.0, correctness: '100% Pass' },
-  { id: 4, name: 'Build/test logs', category: 'Keeps failures and compiler errors', baseline: 265, compressed: 159, savings_pct: 40.0, correctness: '100% Pass' },
-  { id: 5, name: 'Plain text & file dumps', category: 'Head-tail truncation removes redundant middle noise', baseline: 753, compressed: 82, savings_pct: 89.1, correctness: '100% Pass' },
+  { id: 1, name: 'Python Pytest Failure Trace', category: 'Pins failure anchors & error stack traces, drops passing noise', baseline: 1061, compressed: 730, savings_pct: 22.6, correctness: '100% Pass' },
+  { id: 2, name: 'JSON arrays (tool outputs)', category: 'Statistical key sampling & structural depth truncation', baseline: 118154, compressed: 984, savings_pct: 99.1, correctness: '100% Pass' },
+  { id: 3, name: 'Git diffs', category: 'Preserves change hunks, drops unchanged context', baseline: 606, compressed: 518, savings_pct: -0.5, correctness: '100% Pass' },
+  { id: 4, name: 'Build/test logs', category: 'Collapses repetitive prefixes, pins compiler error codes', baseline: 1270, compressed: 682, savings_pct: 39.1, correctness: '100% Pass' },
+  { id: 5, name: 'Plain text & file dumps', category: 'Generates Structural Index ToC & head-tail truncation', baseline: 947, compressed: 465, savings_pct: 41.3, correctness: '100% Pass' },
 ];
 
 export const BenchmarkTable: React.FC = () => {
