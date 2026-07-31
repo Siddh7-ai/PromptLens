@@ -42,18 +42,20 @@ def generate_structural_index(lines: list[str], max_entries: int = 35) -> str:
         "export default ", "export function ", "export class ",
         "public ", "private ", "protected ", "static ", "void ",
         "SELECT ", "CREATE TABLE ", "INSERT INTO ", "UPDATE ", "DELETE FROM ",
-        "# ", "## ", "### ", "#### "
+        "## ", "### ", "#### "
     )
 
-    # Generic pattern matching for headers, questions Q1..Q100, Markdown headings
+    # Generic pattern matching for headers, questions Q1..Q100, Markdown headings (not inline code comments)
     generic_pattern = re.compile(
-        r'^(?:#{1,4}\s+|Q\d+[:\s]|SECTION\s+\d+|###?\s+Q)',
+        r'^(?:#{2,4}\s+|Q\d+[:\s]|SECTION\s+\d+|###?\s+Q)',
         re.IGNORECASE
     )
 
     for idx, line in enumerate(lines, 1):
         stripped = line.strip()
-        is_match = stripped.startswith(symbol_prefixes) or bool(generic_pattern.match(stripped))
+        # Single '#' only matches if it's a top-level Markdown title, not a code comment
+        is_markdown_title = stripped.startswith("# ") and not any(kw in stripped for kw in ("=", "(", ":", "import ", "from "))
+        is_match = stripped.startswith(symbol_prefixes) or is_markdown_title or bool(generic_pattern.match(stripped))
 
         if is_match:
             if current_symbol:
@@ -66,7 +68,7 @@ def generate_structural_index(lines: list[str], max_entries: int = 35) -> str:
     if current_symbol and len(lines) >= symbol_start:
         sections.append(f"Lines {symbol_start}-{len(lines)}: {current_symbol}")
 
-    # Fallback Block Chunking for completely unstructured plain text
+    # Fallback Block Chunking for completely unstructured plain text or filler lines
     if not sections and len(lines) > 20:
         chunk_size = max(10, len(lines) // 6)
         for start_idx in range(1, len(lines) + 1, chunk_size):
@@ -88,13 +90,22 @@ def find_error_anchors(lines: list[str], start_line_offset: int = 1) -> list[tup
     """
     anchors = []
     error_keywords = (
-        "error", "exception", "fail", "warning", "fatal", "traceback", "critical",
+        "exception", "fail", "warning", "fatal", "traceback", "critical",
         "keyerror", "valueerror", "typeerror", "assertionerror", "runtimeerror",
         "attributeerror", "syntaxerror", "nameerror", "indexerror"
     )
     for idx, line in enumerate(lines):
-        line_lower = line.lower()
-        if any(kw in line_lower for kw in error_keywords) or re.search(r'\b\w+(?:Error|Exception)\b', line):
+        # Strip common log prefixes (e.g. "npm error", "[ERROR]") before checking keywords
+        clean_line = re.sub(r'^(?:npm error|npm WARN|\[ERROR\]|\[WARN\]|ERROR:|WARNING:)\s*', '', line, flags=re.IGNORECASE).strip()
+        clean_lower = clean_line.lower()
+
+        is_error = (
+            any(kw in clean_lower for kw in error_keywords) or
+            bool(re.search(r'\b\w+(?:Error|Exception)\b', clean_line)) or
+            bool(re.search(r'\b(?:error\s+TS\d+|FAILED)\b', clean_line, re.IGNORECASE))
+        )
+
+        if is_error:
             anchors.append((start_line_offset + idx, line))
             if len(anchors) >= 10:
                 break
