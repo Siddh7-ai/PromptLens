@@ -21,16 +21,10 @@ TARGET_BASE_URL = os.getenv("TARGET_BASE_URL", "https://api.anthropic.com").rstr
 
 app = FastAPI(title="PromptLens Proxy", version="0.1.0")
 
-# Enable CORS for local development ports.
-# Note: Update allow_origins if dashboard is deployed in a multi-host container environment.
+# Enable CORS for local dashboard and browser extensions (ChatGPT, Claude.ai, etc.)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-    ],
+    allow_origin_regex=r".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

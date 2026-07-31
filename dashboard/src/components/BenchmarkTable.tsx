@@ -15,7 +15,7 @@ export const BenchmarkTable: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight">What gets compressed</h2>
-          <p className="text-xs text-[#888888]">Pre-computed token savings across 5 representative real-world AI agent tool outputs.</p>
+          <p className="text-xs text-[#888888]">Live benchmark results, updated from real test runs across 5 representative AI agent tool outputs.</p>
         </div>
         <span className="text-xs font-mono px-2.5 py-1 rounded bg-[#161616] text-[#aaaaaa] border border-[#2e2e2e]">
           5 / 5 Tasks Passing
