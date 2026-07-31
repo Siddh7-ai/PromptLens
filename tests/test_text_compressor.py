@@ -140,3 +140,58 @@ def test_source_code_toc_generation():
     assert "class DatabaseVault" in result.compressed_str
 
 
+def test_npm_log_prefix_not_overmatched():
+    npm_log = """npm error code ELIFECYCLE
+npm error errno 1
+npm error promptlens-dashboard@0.1.0 build: `tsc && vite build`
+npm error Exit status 1
+npm error 
+npm error Failed at the promptlens-dashboard@0.1.0 build script.
+npm error This is probably not a problem with npm. There is likely additional logging output above.
+npm error src/components/Component0.tsx:10:18 - error TS2339: Property 'id_0' does not exist on type 'Props'. Line detail info text 0 * 1000
+npm error src/components/Component1.tsx:12:18 - error TS2339: Property 'id_1' does not exist on type 'Props'. Line detail info text 1 * 1000
+npm error src/components/Component2.tsx:14:18 - error TS2339: Property 'id_2' does not exist on type 'Props'. Line detail info text 2 * 1000
+npm error src/components/Component3.tsx:16:18 - error TS2339: Property 'id_3' does not exist on type 'Props'. Line detail info text 3 * 1000
+npm error src/components/Component4.tsx:18:18 - error TS2339: Property 'id_4' does not exist on type 'Props'. Line detail info text 4 * 1000
+npm error src/components/Component5.tsx:20:18 - error TS2339: Property 'id_5' does not exist on type 'Props'. Line detail info text 5 * 1000
+npm error src/components/Component6.tsx:22:18 - error TS2339: Property 'id_6' does not exist on type 'Props'. Line detail info text 6 * 1000
+npm error src/components/Component7.tsx:24:18 - error TS2339: Property 'id_7' does not exist on type 'Props'. Line detail info text 7 * 1000
+npm error src/components/Component8.tsx:26:18 - error TS2339: Property 'id_8' does not exist on type 'Props'. Line detail info text 8 * 1000
+npm error Found 15 compiler errors in TypeScript build step.
+npm error 
+npm error A complete log of this run can be found in:
+npm error     C:\\Users\\Raulji Siddharthsinh\\AppData\\Local\\npm-cache\\_logs\\2026-07-31T12_00_00_000Z-debug-0.log"""
+
+    result = compress_text(npm_log, head_lines=4, tail_lines=4)
+    assert result.is_compressed is True
+    # Routine prefix lines like 'npm error code ELIFECYCLE' should not be over-pinned into anchor block
+    assert "Line 1: npm error code ELIFECYCLE" not in result.compressed_str
+
+
+def test_toc_excludes_comment_lines():
+    code_lines = [
+        "import time",
+        "import hashlib",
+        "",
+        "class DatabaseVault:",
+        '    """In-memory SHA-256 data vault with TTL auto-expiration."""',
+        "    def __init__(self, ttl_seconds: int = 3600):",
+        "        self.ttl = ttl_seconds",
+        "        self._store = {}",
+        "",
+        "    def save(self, content: str, custom_id: str = None) -> str:",
+        '        key = custom_id or hashlib.sha256(content.encode("utf-8")).hexdigest()[:12]',
+        '        self._store[key] = {"content": content, "created_at": time.time()}',
+        "        return key",
+    ] + [f"    # Comment line {i} padding description for method logic item details data string = {i} * 1000" for i in range(50)] + [
+        "    def cleanup_expired(self) -> int:",
+        "        return len(self._store)",
+    ]
+    code_content = "\n".join(code_lines)
+
+    result = compress_text(code_content, head_lines=5, tail_lines=5)
+    assert result.is_compressed is True
+    assert "[PromptLens Structural Index]" in result.compressed_str
+    # Individual comment lines must NOT be separate ToC items
+    assert "- Lines 12-12: # Comment line 1" not in result.compressed_str
+    assert "- Lines 13-13: # Comment line 2" not in result.compressed_str
