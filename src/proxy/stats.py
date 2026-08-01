@@ -35,6 +35,12 @@ class MetricsTracker:
         self.total_compressed_tokens: int = 0
         self.total_retrievals: int = 0
         self.request_logs: List[Dict[str, Any]] = []
+        self.discipline_stats: Dict[str, Dict[str, int]] = {
+            "off": {"requests": 0, "output_tokens": 0},
+            "lite": {"requests": 0, "output_tokens": 0},
+            "full": {"requests": 0, "output_tokens": 0},
+            "ultra": {"requests": 0, "output_tokens": 0},
+        }
 
         self._load_from_disk()
 
@@ -50,6 +56,11 @@ class MetricsTracker:
                 self.total_compressed_tokens = data.get("total_compressed_tokens", 0)
                 self.total_retrievals = data.get("total_retrievals", 0)
                 self.request_logs = data.get("request_logs", [])
+                saved_disc = data.get("discipline_stats", {})
+                for k, v in saved_disc.items():
+                    if k in self.discipline_stats and isinstance(v, dict):
+                        self.discipline_stats[k]["requests"] = v.get("requests", 0)
+                        self.discipline_stats[k]["output_tokens"] = v.get("output_tokens", 0)
         except Exception:
             pass
 
@@ -64,7 +75,8 @@ class MetricsTracker:
                 "total_baseline_tokens": self.total_baseline_tokens,
                 "total_compressed_tokens": self.total_compressed_tokens,
                 "total_retrievals": self.total_retrievals,
-                "request_logs": self.request_logs[:20]
+                "request_logs": self.request_logs[:20],
+                "discipline_stats": self.discipline_stats
             }
             with open(self.storage_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2)
@@ -77,7 +89,9 @@ class MetricsTracker:
         method: str,
         baseline_tokens: int,
         compressed_tokens: int,
-        retrieval_id: str | None = None
+        retrieval_id: str | None = None,
+        discipline_mode: str = "off",
+        output_tokens: int = 0
     ) -> None:
         """Record metrics for a proxied request."""
         effective_compressed = min(baseline_tokens, compressed_tokens)
@@ -85,6 +99,11 @@ class MetricsTracker:
         self.total_requests += 1
         self.total_baseline_tokens += baseline_tokens
         self.total_compressed_tokens += effective_compressed
+
+        mode_key = str(discipline_mode or "off").lower()
+        if mode_key in self.discipline_stats:
+            self.discipline_stats[mode_key]["requests"] += 1
+            self.discipline_stats[mode_key]["output_tokens"] += output_tokens
 
         savings_tokens = max(0, baseline_tokens - effective_compressed)
         savings_pct = (savings_tokens / baseline_tokens * 100.0) if baseline_tokens > 0 else 0.0
@@ -97,7 +116,9 @@ class MetricsTracker:
             "baseline_tokens": baseline_tokens,
             "compressed_tokens": compressed_tokens,
             "savings_pct": round(savings_pct, 1),
-            "retrieval_id": retrieval_id or "-"
+            "retrieval_id": retrieval_id or "-",
+            "discipline_mode": mode_key,
+            "output_tokens": output_tokens
         }
         # Keep last 20 requests in stream table
         self.request_logs.insert(0, log_entry)
@@ -130,7 +151,8 @@ class MetricsTracker:
             "estimated_usd_saved": round(usd_saved, 4),
             "total_retrievals": self.total_retrievals,
             "active_vault_items": get_global_store().count(),
-            "recent_requests": self.request_logs[:20]
+            "recent_requests": self.request_logs[:20],
+            "discipline_stats": self.discipline_stats
         }
 
     def reset(self) -> None:

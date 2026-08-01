@@ -107,7 +107,7 @@ def find_error_anchors(lines: list[str], start_line_offset: int = 1) -> list[tup
 
         if is_error:
             anchors.append((start_line_offset + idx, line))
-            if len(anchors) >= 10:
+            if len(anchors) >= 4:
                 break
     return anchors
 

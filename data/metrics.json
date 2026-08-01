@@ -1,208 +1,266 @@
 {
-  "total_requests": 1143,
-  "total_baseline_tokens": 1061411,
-  "total_compressed_tokens": 563267,
-  "total_retrievals": 29,
+  "total_requests": 1607,
+  "total_baseline_tokens": 1189893,
+  "total_compressed_tokens": 678502,
+  "total_retrievals": 45,
   "request_logs": [
     {
       "id": 21,
-      "timestamp": "13:30:02",
+      "timestamp": "12:31:10",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 149,
       "compressed_tokens": 166,
       "savings_pct": 0.0,
-      "retrieval_id": "dcd3cef1482a"
+      "retrieval_id": "dcd3cef1482a",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:30:02",
+      "timestamp": "12:31:05",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 1392,
       "compressed_tokens": 611,
       "savings_pct": 56.1,
-      "retrieval_id": "34ad65f1f7f7"
+      "retrieval_id": "34ad65f1f7f7",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:30:01",
+      "timestamp": "12:31:00",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 1,
       "compressed_tokens": 1,
       "savings_pct": 0.0,
-      "retrieval_id": "-"
+      "retrieval_id": "-",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:30:00",
+      "timestamp": "12:30:51",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 30,
       "compressed_tokens": 30,
       "savings_pct": 0.0,
-      "retrieval_id": "-"
+      "retrieval_id": "-",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:30:00",
+      "timestamp": "12:30:39",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 360,
       "savings_pct": 0.0,
-      "retrieval_id": "b1f1b824a0c8"
+      "retrieval_id": "b1f1b824a0c8",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:59",
+      "timestamp": "12:30:35",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 357,
       "savings_pct": 0.0,
-      "retrieval_id": "4bfa345f87b7"
+      "retrieval_id": "4bfa345f87b7",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:58",
+      "timestamp": "12:30:29",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 353,
       "savings_pct": 0.0,
-      "retrieval_id": "4118760b2743"
+      "retrieval_id": "4118760b2743",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:58",
+      "timestamp": "12:30:24",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 354,
       "savings_pct": 0.0,
-      "retrieval_id": "bd9248ab8d06"
+      "retrieval_id": "bd9248ab8d06",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:57",
+      "timestamp": "12:30:17",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 353,
       "savings_pct": 0.0,
-      "retrieval_id": "977a9a058abd"
+      "retrieval_id": "977a9a058abd",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:56",
+      "timestamp": "12:30:16",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 357,
       "savings_pct": 0.0,
-      "retrieval_id": "3f72b17185b1"
+      "retrieval_id": "3f72b17185b1",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:56",
+      "timestamp": "12:30:15",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 353,
       "savings_pct": 0.0,
-      "retrieval_id": "615a511cae3e"
+      "retrieval_id": "615a511cae3e",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:55",
+      "timestamp": "12:30:15",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 354,
       "savings_pct": 0.0,
-      "retrieval_id": "abf543f31de1"
+      "retrieval_id": "abf543f31de1",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:54",
+      "timestamp": "12:30:14",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 355,
       "savings_pct": 0.0,
-      "retrieval_id": "9715dface4e0"
+      "retrieval_id": "9715dface4e0",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:54",
+      "timestamp": "12:30:13",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 355,
       "savings_pct": 0.0,
-      "retrieval_id": "8ef32db56a37"
+      "retrieval_id": "8ef32db56a37",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:53",
+      "timestamp": "12:30:12",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 355,
       "savings_pct": 0.0,
-      "retrieval_id": "04dbb75a95db"
+      "retrieval_id": "04dbb75a95db",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:53",
+      "timestamp": "12:30:12",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 356,
       "savings_pct": 0.0,
-      "retrieval_id": "fa2f9f06f925"
+      "retrieval_id": "fa2f9f06f925",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:52",
+      "timestamp": "12:30:11",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 355,
       "savings_pct": 0.0,
-      "retrieval_id": "29eee18ab8c7"
+      "retrieval_id": "29eee18ab8c7",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:51",
+      "timestamp": "12:30:10",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 354,
       "savings_pct": 0.0,
-      "retrieval_id": "fc0d102ed7cc"
+      "retrieval_id": "fc0d102ed7cc",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:51",
+      "timestamp": "12:30:09",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 355,
       "savings_pct": 0.0,
-      "retrieval_id": "1afe237d20c0"
+      "retrieval_id": "1afe237d20c0",
+      "discipline_mode": "off",
+      "output_tokens": 0
     },
     {
       "id": 21,
-      "timestamp": "13:29:50",
+      "timestamp": "12:30:08",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
       "compressed_tokens": 355,
       "savings_pct": 0.0,
-      "retrieval_id": "469e48c9375a"
+      "retrieval_id": "469e48c9375a",
+      "discipline_mode": "off",
+      "output_tokens": 0
     }
-  ]
+  ],
+  "discipline_stats": {
+    "off": {
+      "requests": 114,
+      "output_tokens": 0
+    },
+    "lite": {
+      "requests": 0,
+      "output_tokens": 0
+    },
+    "full": {
+      "requests": 0,
+      "output_tokens": 0
+    },
+    "ultra": {
+      "requests": 0,
+      "output_tokens": 0
+    }
+  }
 }

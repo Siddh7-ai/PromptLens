@@ -124,11 +124,35 @@ python scripts/benchmark_tasks.py
 
 ---
 
+## 🎯 Agent Discipline (Optional Ponytail-Style Ruleset Injection)
+
+PromptLens features **two independent optimization layers**:
+1. **Output Compression (Default)**: Automatically compresses large tool results (logs, JSON, diffs) before they reach the model. Reversible via `retrieve_original(id)`.
+2. **Agent Discipline (Opt-In)**: Injects lightweight ruleset prompt nudges (`rules/lite.md`, `rules/full.md`, `rules/ultra.md`) into the Anthropic system prompt to encourage the AI to write leaner code and skip restating plans.
+
+### Agent Discipline Benchmark Results (`scripts/benchmark_discipline.py`)
+
+* **Multi-Run Empirical Sampling**: Multi-iteration evaluation per task/mode with mean ± stddev tracking.
+* **100% Correctness Validation**: All generated outputs pass syntax/AST validation and satisfy task requirements across all 4 modes.
+* **Expected Reduction Range**: Yields **~20% to ~50% average output token savings** depending on ruleset intensity level (`LITE`, `FULL`, `ULTRA`).
+
+| Discipline Mode | Input Ruleset Overhead | Mean Output Lines | Mean Measured Output Tokens (`tiktoken`) | Avg Tokens / Line | Correctness Validation | Output Token Savings |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **OFF** (Default) | 0 tokens | 22.3 lines | 185.9 ± 110.6 tokens | 8.3 tok/line | **100% Pass** | **0.0%** (Baseline) |
+| **LITE** | ~27 tokens | 17.1 lines | 148.8 ± 103.9 tokens | 8.7 tok/line | **100% Pass** | **~20.0%** |
+| **FULL** | ~52 tokens | 12.0 lines | 104.4 ± 70.2 tokens | 8.7 tok/line | **100% Pass** | **~43.8%** |
+| **ULTRA** | ~78 tokens | 9.4 lines | 92.9 ± 59.8 tokens | 9.9 tok/line | **100% Pass** | **~50.0%** |
+
+> 💡 **Note on Statistical Variance:** Standard deviation is relatively high across tasks (e.g. ±59–110 tokens) due to structural differences between complex multi-component files (~300 tokens) and small route handlers (~20–60 tokens). Individual task savings vary based on prompt complexity and baseline code length.
+
+---
+
 ## ⚠️ Known Limitations
 
 1. **Short Diffs & Tiny Tool Outputs**: Tool outputs under 300 bytes or under 50 tokens (e.g. 5-line git diffs) are not compressed. Adding PromptLens retrieval notices to very small diffs can add net token overhead. PromptLens automatically detects negative net savings and forwards raw uncompressed text to prevent token expansion.
 2. **First-Turn Retrieval Overhead**: When a compressed tool output requires a full raw retrieval via `retrieve_original(id)`, a round-trip retrieval tool call incurs an empirical overhead of ~91 tokens.
 3. **Local In-Memory Vault Persistence**: The default `RetrievalStore` is an in-memory TTL vault. Re-starting the proxy clears active vault keys. In production multi-node agent deployment, backing `RetrievalStore` with Redis or disk storage is recommended.
+4. **Agent Discipline Prompt Nudges**: Agent Discipline mode is a prompt-based nudge, not a hard guarantee — effectiveness varies by model, prompt complexity, and task requirements. Output compression remains the primary deterministic optimization engine.
 
 ---
 

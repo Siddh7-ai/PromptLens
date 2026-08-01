@@ -19,6 +19,7 @@ export interface MetricsSummary {
   total_retrievals: number;
   active_vault_items?: number;
   recent_requests: RequestLog[];
+  discipline_stats?: Record<string, { requests: number; output_tokens: number }>;
 }
 
 export interface BenchmarkTask {
@@ -52,4 +53,5 @@ export interface CompressionSettings {
   tail_lines: number;
   max_json_array: number;
   min_tokens_threshold: number;
+  discipline_mode?: string;
 }

@@ -149,6 +149,37 @@ export const SettingsPanel: React.FC = () => {
             />
             <p className="text-[11px] text-[#666666]">Outputs smaller than this threshold pass through uncompressed.</p>
           </div>
+
+          {/* Agent Discipline Mode Selector */}
+          <div className="space-y-2 pt-4 border-t border-[#1f1f1f]">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="font-semibold text-white">Agent Discipline Mode</label>
+                <p className="text-[11px] text-[#666666] mt-0.5">
+                  Injects prompt nudges into Anthropic system prompts to reduce AI code verbosity & generation tokens.
+                </p>
+              </div>
+              <span className="font-mono font-bold text-emerald-400 bg-[#1a1a1a] px-2 py-0.5 rounded border border-[#2e2e2e] uppercase">
+                {settings.discipline_mode || 'off'}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 pt-1">
+              {(['off', 'lite', 'full', 'ultra'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setSettings({ ...settings, discipline_mode: mode })}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold uppercase border transition text-center ${
+                    (settings.discipline_mode || 'off').toLowerCase() === mode
+                      ? 'bg-white text-black border-white'
+                      : 'bg-[#141414] text-[#888888] border-[#262626] hover:text-white'
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Buttons */}

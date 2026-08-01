@@ -95,3 +95,37 @@ def test_proxy_passthrough_error_propagation():
 
         assert response.status_code == 400
         assert response.json() == {"type": "error", "error": {"type": "invalid_request_error", "message": "Missing model"}}
+
+
+def test_settings_api_discipline_mode():
+    """Test getting and updating discipline_mode via /api/settings."""
+    get_res = client.get("/api/settings")
+    assert get_res.status_code == 200
+    assert "discipline_mode" in get_res.json()
+    assert get_res.json()["discipline_mode"] == "off"
+
+    post_res = client.post(
+        "/api/settings",
+        json={
+            "head_lines": 10,
+            "tail_lines": 10,
+            "max_json_array": 50,
+            "min_tokens_threshold": 100,
+            "discipline_mode": "ultra"
+        }
+    )
+    assert post_res.status_code == 200
+    assert post_res.json()["settings"]["discipline_mode"] == "ultra"
+
+    # Reset back to off
+    client.post(
+        "/api/settings",
+        json={
+            "head_lines": 10,
+            "tail_lines": 10,
+            "max_json_array": 50,
+            "min_tokens_threshold": 100,
+            "discipline_mode": "off"
+        }
+    )
+

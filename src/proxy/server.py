@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 from src.compress.json_compressor import compress_json
 from src.compress.text_compressor import compress_text, get_token_count
+from src.rules.agent_discipline import inject_discipline_ruleset
 from src.store.retrieval_store import get_global_store
 from src.proxy.stats import get_global_metrics
 from src.proxy.dashboard_html import DASHBOARD_HTML
@@ -150,6 +151,10 @@ def process_anthropic_payload(payload: dict) -> tuple[dict, str | None]:
     if not isinstance(payload, dict):
         return payload, None
 
+    # Inject Agent Discipline ruleset if mode is active (lite/full/ultra)
+    discipline_mode = COMPRESSION_SETTINGS.get("discipline_mode", os.getenv("AGENT_DISCIPLINE_MODE", "off"))
+    payload = inject_discipline_ruleset(payload, discipline_mode)
+
     has_compressed_items = False
     last_stored_id = None
     messages = payload.get("messages")
@@ -250,7 +255,8 @@ COMPRESSION_SETTINGS = {
     "head_lines": 10,
     "tail_lines": 10,
     "max_json_array": 50,
-    "min_tokens_threshold": 100
+    "min_tokens_threshold": 100,
+    "discipline_mode": os.getenv("AGENT_DISCIPLINE_MODE", "off")
 }
 
 
@@ -259,6 +265,7 @@ class SettingsUpdateRequest(BaseModel):
     tail_lines: int
     max_json_array: int
     min_tokens_threshold: int
+    discipline_mode: str = "off"
 
 
 @app.get("/api/stats")
@@ -308,6 +315,7 @@ async def update_settings(req: SettingsUpdateRequest):
     COMPRESSION_SETTINGS["tail_lines"] = req.tail_lines
     COMPRESSION_SETTINGS["max_json_array"] = req.max_json_array
     COMPRESSION_SETTINGS["min_tokens_threshold"] = req.min_tokens_threshold
+    COMPRESSION_SETTINGS["discipline_mode"] = req.discipline_mode.lower()
     return {"status": "updated", "settings": COMPRESSION_SETTINGS}
 
 
@@ -427,7 +435,8 @@ async def proxy_passthrough(request: Request, path: str):
         method=request.method,
         baseline_tokens=baseline_tokens,
         compressed_tokens=compressed_tokens,
-        retrieval_id=stored_hash_id
+        retrieval_id=stored_hash_id,
+        discipline_mode=COMPRESSION_SETTINGS.get("discipline_mode", "off")
     )
 
     async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
