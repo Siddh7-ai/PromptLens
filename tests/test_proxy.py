@@ -1,3 +1,4 @@
+import json
 import pytest
 from unittest.mock import AsyncMock, patch
 import httpx
@@ -128,4 +129,55 @@ def test_settings_api_discipline_mode():
             "discipline_mode": "off"
         }
     )
+
+
+def test_proxy_openai_chat_completions_passthrough():
+    """Test POST /v1/chat/completions intercepting payload and relaying response."""
+    mock_openai_response_body = json.dumps({
+        "id": "chatcmpl-123",
+        "object": "chat.completion",
+        "created": 1677858288,
+        "model": "gpt-4o",
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": "The error was caused by a react dependency conflict."
+            },
+            "finish_reason": "stop"
+        }],
+        "usage": {
+            "prompt_tokens": 150,
+            "completion_tokens": 12,
+            "total_tokens": 162
+        }
+    }).encode("utf-8")
+
+    mock_upstream_response = httpx.Response(
+        status_code=200,
+        headers={"content-type": "application/json"},
+        content=mock_openai_response_body,
+    )
+
+    with patch("httpx.AsyncClient.send", new_callable=AsyncMock) as mock_send:
+        mock_send.return_value = mock_upstream_response
+
+        openai_payload = {
+            "model": "gpt-4o",
+            "messages": [
+                {"role": "system", "content": "You are a helpful developer assistant."},
+                {"role": "user", "content": "Fix error."}
+            ]
+        }
+
+        response = client.post(
+            "/v1/chat/completions",
+            json=openai_payload,
+            headers={"Authorization": "Bearer sk-testkey"}
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == "chatcmpl-123"
+        assert data["choices"][0]["message"]["content"] == "The error was caused by a react dependency conflict."
 

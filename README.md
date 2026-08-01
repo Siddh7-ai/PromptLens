@@ -153,6 +153,7 @@ PromptLens features **two independent optimization layers**:
 2. **First-Turn Retrieval Overhead**: When a compressed tool output requires a full raw retrieval via `retrieve_original(id)`, a round-trip retrieval tool call incurs an empirical overhead of ~91 tokens.
 3. **Local In-Memory Vault Persistence**: The default `RetrievalStore` is an in-memory TTL vault. Re-starting the proxy clears active vault keys. In production multi-node agent deployment, backing `RetrievalStore` with Redis or disk storage is recommended.
 4. **Agent Discipline Prompt Nudges**: Agent Discipline mode is a prompt-based nudge, not a hard guarantee — effectiveness varies by model, prompt complexity, and task requirements. Output compression remains the primary deterministic optimization engine.
+5. **OpenAI Format Payload Compatibility**: PromptLens includes request-payload transformation for the OpenAI `/v1/chat/completions` format (system prompt ruleset injection, tool-content compression, function tool injection), verified via unit tests and local payload transformation. Live end-to-end streaming response relay against external live API endpoints (e.g. live GPT-4o or Ollama) has not yet been executed in production.
 
 ---
 
