@@ -53,6 +53,7 @@ export const SettingsPanel: React.FC = () => {
       tail_lines: 10,
       max_json_array: 50,
       min_tokens_threshold: 100,
+      discipline_mode: 'off',
     });
   };
 

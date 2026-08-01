@@ -153,6 +153,13 @@ export const DocsView: React.FC<DocsViewProps> = ({ view }) => {
               Original raw payloads are stored under SHA-256 hash IDs. PromptLens injects <code className="text-emerald-400">retrieve_original(id)</code> into LLM tools so models can recover full data on demand.
             </p>
           </div>
+
+          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 space-y-3 md:col-span-2">
+            <h3 className="text-base font-bold text-emerald-400">5. Agent Discipline (Ponytail-Style Input Nudges)</h3>
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              Injects lightweight prompt rulesets (<code className="text-emerald-400">rules/lite.md</code>, <code className="text-emerald-400">rules/full.md</code>, <code className="text-emerald-400">rules/ultra.md</code>) into the Anthropic system prompt to encourage the AI model to generate concise code, skip restating plans, and cut output tokens by ~20% to ~50%.
+            </p>
+          </div>
         </div>
       </div>
     );

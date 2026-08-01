@@ -8,6 +8,7 @@ import { Playground } from './components/Playground';
 import { VaultInspector } from './components/VaultInspector';
 import { SavingsChart } from './components/SavingsChart';
 import { SettingsPanel } from './components/SettingsPanel';
+import { DisciplineStats } from './components/DisciplineStats';
 import { DocsView } from './components/DocsView';
 import { MetricsSummary } from './types';
 import { RefreshCw } from 'lucide-react';
@@ -182,6 +183,9 @@ export const App: React.FC = () => {
                 savingsPct={metrics.overall_savings_pct}
               />
 
+              {/* Agent Discipline Output Token Metrics */}
+              <DisciplineStats metrics={metrics} />
+
               {/* 5-Task Benchmark Comparison Suite */}
               <BenchmarkTable />
 
@@ -194,7 +198,12 @@ export const App: React.FC = () => {
 
           {currentView === 'playground' && <Playground />}
 
-          {currentView === 'analytics' && <SavingsChart requests={metrics.recent_requests} />}
+          {currentView === 'analytics' && (
+            <div className="space-y-6">
+              <SavingsChart requests={metrics.recent_requests} />
+              <DisciplineStats metrics={metrics} />
+            </div>
+          )}
 
           {currentView === 'benchmarks' && <BenchmarkTable />}
 
