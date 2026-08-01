@@ -350,6 +350,9 @@ def process_openai_payload(payload: dict[str, Any]) -> tuple[dict[str, Any], str
     """
     Applies compression & tool injection for OpenAI API payloads (/v1/chat/completions).
     """
+    discipline_mode = COMPRESSION_SETTINGS.get("discipline_mode", os.getenv("AGENT_DISCIPLINE_MODE", "off"))
+    payload = inject_discipline_ruleset(payload, discipline_mode)
+
     messages = payload.get("messages", [])
     has_compressed_items = False
     last_stored_id = None

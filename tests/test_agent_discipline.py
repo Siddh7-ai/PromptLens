@@ -65,3 +65,26 @@ def test_inject_discipline_empty_system():
     res = inject_discipline_ruleset(payload, mode="lite")
     assert "system" in res
     assert "[Agent Discipline Ruleset - Mode: LITE]" in res["system"]
+
+
+def test_inject_discipline_openai_format():
+    """Test injecting discipline ruleset into OpenAI-compatible messages array."""
+    openai_payload = {
+        "model": "gpt-4o",
+        "messages": [
+            {"role": "system", "content": "You are a helpful coding assistant."},
+            {"role": "user", "content": "Write a login form."}
+        ]
+    }
+    res = inject_discipline_ruleset(openai_payload, mode="full")
+    assert "[Agent Discipline Ruleset - Mode: FULL]" in res["messages"][0]["content"]
+    assert "You are a helpful coding assistant." in res["messages"][0]["content"]
+
+    # Test when no system message exists
+    no_system_payload = {
+        "model": "gpt-4o",
+        "messages": [{"role": "user", "content": "Hello"}]
+    }
+    res2 = inject_discipline_ruleset(no_system_payload, mode="ultra")
+    assert res2["messages"][0]["role"] == "system"
+    assert "[Agent Discipline Ruleset - Mode: ULTRA]" in res2["messages"][0]["content"]

@@ -33,7 +33,8 @@ def load_ruleset(mode: str) -> str:
 
 def inject_discipline_ruleset(payload: Dict[str, Any], mode: str) -> Dict[str, Any]:
     """
-    Injects the discipline ruleset prompt nudge into the Anthropic system prompt field.
+    Injects the discipline ruleset prompt nudge into Anthropic (system field) or
+    OpenAI-compatible (messages array system role) payloads.
     Returns the payload unmodified if mode is 'off' or ruleset is empty.
     """
     if not isinstance(payload, dict) or not mode:
@@ -49,15 +50,30 @@ def inject_discipline_ruleset(payload: Dict[str, Any], mode: str) -> Dict[str, A
 
     discipline_notice = f"\n\n[Agent Discipline Ruleset - Mode: {clean_mode.upper()}]\n{ruleset_text}"
 
-    existing_system = payload.get("system")
+    # 1. Anthropic API format (system prompt field)
+    if "system" in payload or "messages" not in payload:
+        existing_system = payload.get("system")
+        if existing_system is None:
+            payload["system"] = discipline_notice.strip()
+        elif isinstance(existing_system, str):
+            payload["system"] = f"{existing_system}{discipline_notice}".strip()
+        elif isinstance(existing_system, list):
+            new_block = {"type": "text", "text": discipline_notice.strip()}
+            payload["system"] = existing_system + [new_block]
 
-    if existing_system is None:
-        payload["system"] = discipline_notice.strip()
-    elif isinstance(existing_system, str):
-        payload["system"] = f"{existing_system}{discipline_notice}".strip()
-    elif isinstance(existing_system, list):
-        # Anthropic supports array of content blocks in system field
-        new_block = {"type": "text", "text": discipline_notice.strip()}
-        payload["system"] = existing_system + [new_block]
+    # 2. Universal OpenAI API format (messages array with role: system)
+    elif isinstance(payload.get("messages"), list):
+        messages = payload["messages"]
+        system_found = False
+        for msg in messages:
+            if isinstance(msg, dict) and msg.get("role") == "system":
+                existing_content = msg.get("content", "")
+                if isinstance(existing_content, str):
+                    msg["content"] = f"{existing_content}{discipline_notice}".strip()
+                system_found = True
+                break
+
+        if not system_found:
+            messages.insert(0, {"role": "system", "content": discipline_notice.strip()})
 
     return payload
