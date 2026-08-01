@@ -168,7 +168,7 @@ PromptLens compresses large payloads locally before sending them to the LLM:
 
 ### 3.7 Agent Discipline Engine (`src/rules/agent_discipline.py` & `rules/`)
 
-[src/rules/agent_discipline.py](file:///c:/Users/Raulji%20Siddharthsinh/OneDrive/Desktop/PromptLens/src/rules/agent_discipline.py) implements PromptLens's second optimization layer — input discipline via Ponytail-style ruleset injection.
+[src/rules/agent_discipline.py](file:///c:/Users/Raulji%20Siddharthsinh/OneDrive/Desktop/PromptLens/src/rules/agent_discipline.py) implements PromptLens's second optimization layer — input discipline via system ruleset injection.
 
 - **Architecture Split**: PromptLens has two independent optimization layers:
   1. **Output Compression**: Shrinks tool result data (JSON, stack traces, logs) before it reaches the model.

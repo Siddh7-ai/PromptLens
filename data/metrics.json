@@ -1,12 +1,12 @@
 {
-  "total_requests": 1607,
-  "total_baseline_tokens": 1189893,
-  "total_compressed_tokens": 678502,
-  "total_retrievals": 45,
+  "total_requests": 1663,
+  "total_baseline_tokens": 1204967,
+  "total_compressed_tokens": 692351,
+  "total_retrievals": 47,
   "request_logs": [
     {
       "id": 21,
-      "timestamp": "12:31:10",
+      "timestamp": "12:43:06",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 149,
@@ -18,7 +18,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:31:05",
+      "timestamp": "12:43:05",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 1392,
@@ -30,7 +30,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:31:00",
+      "timestamp": "12:43:05",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 1,
@@ -42,7 +42,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:51",
+      "timestamp": "12:43:04",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 30,
@@ -54,7 +54,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:39",
+      "timestamp": "12:43:02",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -66,7 +66,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:35",
+      "timestamp": "12:43:02",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -78,7 +78,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:29",
+      "timestamp": "12:43:01",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -90,7 +90,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:24",
+      "timestamp": "12:43:00",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -102,7 +102,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:17",
+      "timestamp": "12:42:59",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -114,7 +114,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:16",
+      "timestamp": "12:42:58",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -126,7 +126,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:15",
+      "timestamp": "12:42:57",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -138,7 +138,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:15",
+      "timestamp": "12:42:56",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -150,7 +150,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:14",
+      "timestamp": "12:42:55",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -162,7 +162,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:13",
+      "timestamp": "12:42:54",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -174,7 +174,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:12",
+      "timestamp": "12:42:53",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -186,7 +186,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:12",
+      "timestamp": "12:42:53",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -198,7 +198,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:11",
+      "timestamp": "12:42:52",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -210,7 +210,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:10",
+      "timestamp": "12:42:51",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -222,7 +222,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:09",
+      "timestamp": "12:42:50",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -234,7 +234,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:30:08",
+      "timestamp": "12:42:44",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -247,7 +247,7 @@
   ],
   "discipline_stats": {
     "off": {
-      "requests": 114,
+      "requests": 170,
       "output_tokens": 0
     },
     "lite": {

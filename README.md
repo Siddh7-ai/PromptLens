@@ -124,7 +124,7 @@ python scripts/benchmark_tasks.py
 
 ---
 
-## 🎯 Agent Discipline (Optional Ponytail-Style Ruleset Injection)
+## 🎯 Agent Discipline (Optional System Ruleset Injection)
 
 PromptLens features **two independent optimization layers**:
 1. **Output Compression (Default)**: Automatically compresses large tool results (logs, JSON, diffs) before they reach the model. Reversible via `retrieve_original(id)`.

@@ -24,7 +24,7 @@ export const DisciplineStats: React.FC<DisciplineStatsProps> = ({ metrics }) => 
           <h3 className="text-sm font-semibold text-white">Agent Discipline — Output Token Savings</h3>
         </div>
         <span className="text-[11px] text-[#888888] font-mono flex items-center gap-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Ponytail-Style Injection
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> System Ruleset Injection
         </span>
       </div>
 
