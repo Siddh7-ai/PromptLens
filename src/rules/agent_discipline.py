@@ -51,7 +51,10 @@ def inject_discipline_ruleset(payload: Dict[str, Any], mode: str) -> Dict[str, A
     discipline_notice = f"\n\n[Agent Discipline Ruleset - Mode: {clean_mode.upper()}]\n{ruleset_text}"
 
     # 1. Anthropic API format (system prompt field)
-    if "system" in payload or "messages" not in payload:
+    model_str = str(payload.get("model", "")).lower()
+    is_anthropic_format = "system" in payload or "messages" not in payload or "claude" in model_str or "anthropic" in model_str
+
+    if is_anthropic_format:
         existing_system = payload.get("system")
         if existing_system is None:
             payload["system"] = discipline_notice.strip()

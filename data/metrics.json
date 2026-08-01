@@ -1,36 +1,12 @@
 {
-  "total_requests": 1674,
-  "total_baseline_tokens": 1208465,
-  "total_compressed_tokens": 695405,
-  "total_retrievals": 48,
+  "total_requests": 1728,
+  "total_baseline_tokens": 1223051,
+  "total_compressed_tokens": 708766,
+  "total_retrievals": 50,
   "request_logs": [
     {
       "id": 21,
-      "timestamp": "12:51:35",
-      "path": "/v1/messages",
-      "method": "POST",
-      "baseline_tokens": 244,
-      "compressed_tokens": 354,
-      "savings_pct": 0.0,
-      "retrieval_id": "dd6b177c9983",
-      "discipline_mode": "off",
-      "output_tokens": 0
-    },
-    {
-      "id": 21,
-      "timestamp": "12:51:35",
-      "path": "/v1/messages",
-      "method": "POST",
-      "baseline_tokens": 244,
-      "compressed_tokens": 356,
-      "savings_pct": 0.0,
-      "retrieval_id": "f41938dd7f6e",
-      "discipline_mode": "off",
-      "output_tokens": 0
-    },
-    {
-      "id": 21,
-      "timestamp": "12:51:34",
+      "timestamp": "12:53:09",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -42,7 +18,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:51:33",
+      "timestamp": "12:53:08",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -54,7 +30,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:51:32",
+      "timestamp": "12:53:07",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -66,7 +42,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:51:31",
+      "timestamp": "12:53:06",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -78,7 +54,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:51:30",
+      "timestamp": "12:53:05",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -90,7 +66,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:51:29",
+      "timestamp": "12:53:04",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -102,7 +78,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:51:28",
+      "timestamp": "12:53:03",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -114,7 +90,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:51:27",
+      "timestamp": "12:53:02",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 182,
@@ -126,7 +102,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:51:26",
+      "timestamp": "12:53:01",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 1120,
@@ -138,7 +114,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:43:06",
+      "timestamp": "12:52:16",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 149,
@@ -150,7 +126,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:43:05",
+      "timestamp": "12:52:15",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 1392,
@@ -162,7 +138,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:43:05",
+      "timestamp": "12:52:14",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 1,
@@ -174,7 +150,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:43:04",
+      "timestamp": "12:52:13",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 30,
@@ -186,7 +162,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:43:02",
+      "timestamp": "12:52:12",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -198,7 +174,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:43:02",
+      "timestamp": "12:52:11",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -210,7 +186,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:43:01",
+      "timestamp": "12:52:10",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -222,7 +198,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:43:00",
+      "timestamp": "12:52:09",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -234,7 +210,7 @@
     },
     {
       "id": 21,
-      "timestamp": "12:42:59",
+      "timestamp": "12:52:08",
       "path": "/v1/messages",
       "method": "POST",
       "baseline_tokens": 244,
@@ -243,11 +219,35 @@
       "retrieval_id": "977a9a058abd",
       "discipline_mode": "off",
       "output_tokens": 0
+    },
+    {
+      "id": 21,
+      "timestamp": "12:52:07",
+      "path": "/v1/messages",
+      "method": "POST",
+      "baseline_tokens": 244,
+      "compressed_tokens": 357,
+      "savings_pct": 0.0,
+      "retrieval_id": "3f72b17185b1",
+      "discipline_mode": "off",
+      "output_tokens": 0
+    },
+    {
+      "id": 21,
+      "timestamp": "12:52:06",
+      "path": "/v1/messages",
+      "method": "POST",
+      "baseline_tokens": 244,
+      "compressed_tokens": 353,
+      "savings_pct": 0.0,
+      "retrieval_id": "615a511cae3e",
+      "discipline_mode": "off",
+      "output_tokens": 0
     }
   ],
   "discipline_stats": {
     "off": {
-      "requests": 181,
+      "requests": 235,
       "output_tokens": 0
     },
     "lite": {
