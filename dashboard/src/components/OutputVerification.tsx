@@ -193,7 +193,7 @@ export const OutputVerification: React.FC = () => {
       {/* Fidelity Match Banner Card */}
       <div className="bg-neutral-900/90 border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-black text-sm">
+          <div className="min-w-[52px] h-10 px-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-bold text-xs font-mono shrink-0 shadow-inner">
             100%
           </div>
           <div>
