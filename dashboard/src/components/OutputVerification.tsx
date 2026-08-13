@@ -79,7 +79,32 @@ const SAMPLE_VERIFICATION_PRESETS: VerificationPreset[] = [
 export const OutputVerification: React.FC = () => {
   const [selectedPresetId, setSelectedPresetId] = useState<string>('json_array');
   const [customPrompt, setCustomPrompt] = useState<string>('');
-  const [apiKey, setApiKey] = useState<string>('');
+  const [apiKey, setApiKey] = useState<string>(() => {
+    try {
+      return localStorage.getItem('promptlens_live_api_key') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const handleApiKeyChange = (val: string) => {
+    setApiKey(val);
+    try {
+      localStorage.setItem('promptlens_live_api_key', val);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const getActiveKeyStatus = () => {
+    const trimmed = apiKey.trim();
+    if (trimmed.startsWith('AIza')) return { label: 'Gemini Key Active', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' };
+    if (trimmed.startsWith('sk-ant-')) return { label: 'Claude Key Active', color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' };
+    if (trimmed.startsWith('sk-')) return { label: 'OpenAI Key Active', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' };
+    return { label: 'Offline Mode', color: 'text-neutral-400 border-neutral-800 bg-neutral-950' };
+  };
+
+  const keyStatus = getActiveKeyStatus();
   const [liveFidelityResult, setLiveFidelityResult] = useState<{
     original_tokens: number;
     compressed_tokens: number;
@@ -161,13 +186,18 @@ export const OutputVerification: React.FC = () => {
             <span className="text-[11px] text-neutral-400 block">Enter your API key (OpenAI sk-..., Claude sk-ant-..., or Gemini AIza...) for live LLM verification.</span>
           </div>
         </div>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk-... / sk-ant-... / AIza... (API Key)"
-          className="bg-neutral-950 text-xs text-neutral-200 border border-neutral-800 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-emerald-500/50 w-full sm:w-80"
-        />
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <span className={`text-[10px] font-mono font-bold border px-2 py-1 rounded-lg shrink-0 ${keyStatus.color}`}>
+            {keyStatus.label}
+          </span>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => handleApiKeyChange(e.target.value)}
+            placeholder="sk-... / sk-ant-... / AIza... (API Key)"
+            className="bg-neutral-950 text-xs text-neutral-200 border border-neutral-800 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-emerald-500/50 w-full sm:w-72"
+          />
+        </div>
       </div>
 
       {/* Preset Selector Tabs */}
