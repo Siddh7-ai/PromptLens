@@ -6,7 +6,7 @@ export const SettingsPanel: React.FC = () => {
   const [settings, setSettings] = useState<CompressionSettings>({
     head_lines: 10,
     tail_lines: 10,
-    max_json_array: 50,
+    max_json_array: 5,
     min_tokens_threshold: 100,
   });
   const [saving, setSaving] = useState<boolean>(false);

@@ -261,7 +261,7 @@ async def health_check():
 COMPRESSION_SETTINGS = {
     "head_lines": 10,
     "tail_lines": 10,
-    "max_json_array": 50,
+    "max_json_array": 5,
     "min_tokens_threshold": 100,
     "discipline_mode": os.getenv("AGENT_DISCIPLINE_MODE", "off")
 }

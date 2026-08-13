@@ -130,6 +130,7 @@ export const Playground: React.FC = () => {
 
   const [loading, setLoading] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [prettyPrint, setPrettyPrint] = useState<boolean>(true);
 
   // Sync state to localStorage whenever changed
   useEffect(() => {
@@ -163,9 +164,29 @@ export const Playground: React.FC = () => {
     }
   };
 
+  const getFormattedOutput = (text: string): string => {
+    if (!prettyPrint || !text) return text;
+    try {
+      const splitMarker = '\n\n[PromptLens:';
+      if (text.includes(splitMarker)) {
+        const parts = text.split(splitMarker);
+        const jsonPart = parts[0].trim();
+        const noticePart = splitMarker + parts.slice(1).join(splitMarker);
+        const parsed = JSON.parse(jsonPart);
+        return JSON.stringify(parsed, null, 2) + noticePart;
+      }
+      const parsed = JSON.parse(text);
+      return JSON.stringify(parsed, null, 2);
+    } catch (e) {
+      return text;
+    }
+  };
+
+  const formattedOutput = result ? getFormattedOutput(result.compressed_text) : '';
+
   const handleCopy = () => {
     if (result) {
-      navigator.clipboard.writeText(result.compressed_text);
+      navigator.clipboard.writeText(formattedOutput);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -185,14 +206,30 @@ export const Playground: React.FC = () => {
     }
   };
 
+  // Helper to extract omitted count from payload if present
+  const getOmittedCount = (): number | null => {
+    if (!result || !result.compressed_text) return null;
+    try {
+      const match = result.compressed_text.match(/"omitted_items":\s*(\d+)/);
+      if (match) return parseInt(match[1], 10);
+      const lineMatch = result.compressed_text.match(/TRUNCATED (\d+) lines/);
+      if (lineMatch) return parseInt(lineMatch[1], 10);
+    } catch (e) {
+      return null;
+    }
+    return null;
+  };
+
+  const omittedCount = getOmittedCount();
+
   return (
-    <div className="headroom-card p-6 space-y-6">
+    <div className="headroom-card p-6 space-y-6 animate-fadeIn">
       {/* Header with Sample Presets & Reset Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1c1c1c] pb-4">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight">Interactive Prompt Compression Playground ✨</h2>
           <p className="text-xs text-[#888888] mt-1">
-            Test prompt compression live in your browser. Your prompt is saved across page navigation.
+            Test prompt compression live in your browser. Toggle between Pretty-Printed view and Minified payload.
           </p>
         </div>
         <button
@@ -239,26 +276,50 @@ export const Playground: React.FC = () => {
           <textarea
             value={inputContent}
             onChange={(e) => setInputContent(e.target.value)}
-            rows={14}
-            className="w-full bg-[#050505] text-[#cccccc] border border-[#1f1f1f] rounded-xl p-3 text-xs font-mono focus:outline-none focus:border-[#444444] transition resize-none"
+            rows={15}
+            className="w-full bg-[#050505] text-[#cccccc] border border-[#1f1f1f] rounded-xl p-3.5 text-xs font-mono focus:outline-none focus:border-[#444444] transition resize-none leading-relaxed"
             placeholder="Paste raw log or JSON here..."
           />
           <button
             onClick={handleCompress}
             disabled={loading || !inputContent.trim()}
-            className="w-full py-2.5 rounded-xl text-xs font-semibold bg-white hover:bg-[#e0e0e0] disabled:opacity-50 text-black transition flex items-center justify-center space-x-2"
+            className="w-full py-2.5 rounded-xl text-xs font-bold bg-white hover:bg-[#e0e0e0] disabled:opacity-50 text-black transition flex items-center justify-center space-x-2 shadow-lg"
           >
             <Play className="w-3.5 h-3.5 fill-black" />
-            <span>{loading ? 'Compressing...' : 'Compress with PromptLens'}</span>
+            <span>{loading ? 'Compressing Payload...' : 'Compress with PromptLens'}</span>
           </button>
         </div>
 
         {/* Output Panel */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-[#888888] uppercase tracking-wider block">
-              Compressed Output Payload
-            </label>
+            <div className="flex items-center space-x-2">
+              <label className="text-xs font-semibold text-[#888888] uppercase tracking-wider block">
+                Compressed Output Payload
+              </label>
+              {/* Pretty Print vs Raw Minified Mode Switcher */}
+              <div className="inline-flex p-0.5 bg-[#141414] border border-[#242424] rounded-lg">
+                <button
+                  onClick={() => setPrettyPrint(true)}
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded transition ${
+                    prettyPrint ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-[#888888] hover:text-white'
+                  }`}
+                  title="Format JSON with readable indentations"
+                >
+                  Pretty View
+                </button>
+                <button
+                  onClick={() => setPrettyPrint(false)}
+                  className={`px-2 py-0.5 text-[10px] font-bold rounded transition ${
+                    !prettyPrint ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'text-[#888888] hover:text-white'
+                  }`}
+                  title="Raw minified single-line API format"
+                >
+                  Raw Minified
+                </button>
+              </div>
+            </div>
+
             {result && (
               <button
                 onClick={handleCopy}
@@ -269,24 +330,43 @@ export const Playground: React.FC = () => {
               </button>
             )}
           </div>
+
           <div className="relative">
             <textarea
-              value={result ? result.compressed_text : 'Click "Compress with PromptLens" to view result...'}
+              value={result ? formattedOutput : 'Click "Compress with PromptLens" to view result...'}
               readOnly
-              rows={14}
-              className="w-full bg-[#050505] text-[#aaaaaa] border border-[#1f1f1f] rounded-xl p-3 text-xs font-mono focus:outline-none resize-none"
+              rows={15}
+              className="w-full bg-[#050505] text-[#cccccc] border border-[#1f1f1f] rounded-xl p-3.5 text-xs font-mono focus:outline-none resize-none leading-relaxed"
             />
           </div>
 
+          {/* Results & Truncation Highlights Bar */}
           {result && (
-            <div className="flex items-center justify-between p-3 rounded-xl bg-[#0c0c0c] border border-[#1f1f1f] text-xs animate-fadeIn">
-              <div>
-                Original: <span className="font-mono text-white font-bold">{result.original_tokens}</span> tokens | Compressed:{' '}
-                <span className="font-mono text-white font-bold">{result.compressed_tokens}</span> tokens
+            <div className="space-y-2 animate-fadeIn">
+              <div className="flex flex-wrap items-center justify-between p-3 rounded-xl bg-[#0c0c0c] border border-[#1f1f1f] text-xs gap-2">
+                <div>
+                  Original: <span className="font-mono text-white font-bold">{result.original_tokens.toLocaleString()}</span> tokens | Compressed:{' '}
+                  <span className="font-mono text-white font-bold">{result.compressed_tokens.toLocaleString()}</span> tokens
+                </div>
+                <span className="font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/20">
+                  {result.savings_pct.toFixed(1)}% Saved
+                </span>
               </div>
-              <span className="font-bold text-white bg-[#1c1c1c] px-2.5 py-0.5 rounded border border-[#2e2e2e]">
-                {result.savings_pct.toFixed(1)}% Saved
-              </span>
+
+              {/* Omitted Items Highlight Banner */}
+              {omittedCount !== null && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs flex items-center justify-between text-emerald-300">
+                  <div className="flex items-center space-x-2">
+                    <span className="font-bold">✂️ Truncation Active:</span>
+                    <span>{omittedCount} records/lines omitted and stored in Vault</span>
+                  </div>
+                  {result.retrieval_id && (
+                    <span className="font-mono text-[11px] bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30 text-emerald-200">
+                      ID: #{result.retrieval_id}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
