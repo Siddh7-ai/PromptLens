@@ -224,78 +224,93 @@ export const OutputVerification: React.FC = () => {
       </div>
 
       {/* Side-by-Side Output Comparison Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
         {/* Left Column: Original Uncompressed Prompt & Response */}
-        <div className="space-y-4 bg-neutral-950 border border-neutral-850 rounded-2xl p-5 shadow-xl">
-          <div className="flex items-center justify-between border-b border-neutral-850 pb-3">
-            <div className="flex items-center space-x-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
-              <h3 className="text-sm font-bold text-white">Original Uncompressed Prompt</h3>
+        <div className="space-y-4 bg-neutral-950 border border-neutral-850 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-neutral-850 pb-3 h-8">
+              <div className="flex items-center space-x-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                <h3 className="text-sm font-bold text-white">Original Uncompressed Prompt</h3>
+              </div>
+              <button
+                onClick={() => handleCopy(activeOriginalSnippet, true)}
+                className="text-xs text-neutral-400 hover:text-white flex items-center space-x-1"
+              >
+                {copiedOriginal ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedOriginal ? 'Copied' : 'Copy Payload'}</span>
+              </button>
             </div>
-            <button
-              onClick={() => handleCopy(activeOriginalSnippet, true)}
-              className="text-xs text-neutral-400 hover:text-white flex items-center space-x-1"
-            >
-              {copiedOriginal ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedOriginal ? 'Copied' : 'Copy Full Payload'}</span>
-            </button>
-          </div>
 
-          <div>
-            <label className="text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-wider block mb-1">
-              Full Input Payload ({activeOriginalTokens.toLocaleString()} Tokens)
-            </label>
-            <pre className="w-full bg-neutral-900/90 text-neutral-300 border border-neutral-800 rounded-xl p-3.5 text-xs font-mono whitespace-pre-wrap overflow-x-auto max-h-56 leading-relaxed">
-              {activeOriginalSnippet}
-            </pre>
-          </div>
+            <div>
+              <div className="h-5 flex items-center justify-between mb-1">
+                <label className="text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-wider block">
+                  Full Input Payload ({activeOriginalTokens.toLocaleString()} Tokens)
+                </label>
+                <span className="text-[9px] font-mono text-neutral-500">Uncompressed Raw</span>
+              </div>
+              <pre className="w-full bg-neutral-900/90 text-neutral-300 border border-neutral-800 rounded-xl p-3.5 text-xs font-mono whitespace-pre-wrap overflow-x-auto h-56 leading-relaxed">
+                {activeOriginalSnippet}
+              </pre>
+            </div>
 
-          <div className="pt-2">
-            <label className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider block mb-1">
-              Generated LLM Output Response
-            </label>
-            <div className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-xs font-mono text-neutral-200 whitespace-pre-wrap leading-relaxed shadow-inner">
-              {activeOriginalResponse}
+            <div className="pt-2">
+              <div className="h-5 flex items-center justify-between mb-1">
+                <label className="text-[10px] font-mono font-bold text-neutral-400 uppercase tracking-wider block">
+                  Generated LLM Output Response
+                </label>
+                <span className="text-[9px] font-mono text-neutral-500">Baseline Answer</span>
+              </div>
+              <div className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-xs font-mono text-neutral-200 whitespace-pre-wrap leading-relaxed shadow-inner min-h-[140px]">
+                {activeOriginalResponse}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Right Column: PromptLens Compressed Payload & Response */}
-        <div className="space-y-4 bg-neutral-950 border border-emerald-500/30 rounded-2xl p-5 shadow-xl relative">
+        <div className="space-y-4 bg-neutral-950 border border-emerald-500/30 rounded-2xl p-5 shadow-xl relative flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
 
-          <div className="flex items-center justify-between border-b border-neutral-850 pb-3">
-            <div className="flex items-center space-x-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-              <h3 className="text-sm font-bold text-emerald-300">PromptLens Compressed Payload</h3>
+          <div className="space-y-4 relative z-10">
+            <div className="flex items-center justify-between border-b border-neutral-850 pb-3 h-8">
+              <div className="flex items-center space-x-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                <h3 className="text-sm font-bold text-emerald-300">PromptLens Compressed Payload</h3>
+              </div>
+              <button
+                onClick={() => handleCopy(currentPreset.compressedPromptSnippet, false)}
+                className="text-xs text-neutral-400 hover:text-white flex items-center space-x-1"
+              >
+                {copiedCompressed ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedCompressed ? 'Copied' : 'Copy Payload'}</span>
+              </button>
             </div>
-            <button
-              onClick={() => handleCopy(currentPreset.compressedPromptSnippet, false)}
-              className="text-xs text-neutral-400 hover:text-white flex items-center space-x-1"
-            >
-              {copiedCompressed ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copiedCompressed ? 'Copied' : 'Copy Payload'}</span>
-            </button>
-          </div>
 
-          <div>
-            <label className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider block mb-1">
-              Optimized Input Payload ({activeCompressedTokens.toLocaleString()} Tokens)
-            </label>
-            <pre className="w-full bg-neutral-900/90 text-emerald-200 border border-emerald-500/20 rounded-xl p-3.5 text-xs font-mono whitespace-pre-wrap overflow-x-auto max-h-56 leading-relaxed">
-              {currentPreset.compressedPromptSnippet}
-            </pre>
-          </div>
+            <div>
+              <div className="h-5 flex items-center justify-between mb-1">
+                <label className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider block">
+                  Optimized Input Payload ({activeCompressedTokens.toLocaleString()} Tokens)
+                </label>
+                <span className="text-[9px] font-mono text-emerald-400 font-bold">-{activeSavingsPct.toFixed(1)}% Tokens</span>
+              </div>
+              <pre className="w-full bg-neutral-900/90 text-emerald-200 border border-emerald-500/20 rounded-xl p-3.5 text-xs font-mono whitespace-pre-wrap overflow-x-auto h-56 leading-relaxed">
+                {currentPreset.compressedPromptSnippet}
+              </pre>
+            </div>
 
-          <div className="pt-2">
-            <label className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider block mb-1 flex items-center justify-between">
-              <span>Generated LLM Output Response</span>
-              <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">
-                ✓ 100% Identical Verdict
-              </span>
-            </label>
-            <div className="w-full bg-neutral-900 border border-emerald-500/30 rounded-xl p-4 text-xs font-mono text-emerald-100 whitespace-pre-wrap leading-relaxed shadow-inner">
-              {activeCompressedResponse}
+            <div className="pt-2">
+              <div className="h-5 flex items-center justify-between mb-1">
+                <label className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-wider block">
+                  Generated LLM Output Response
+                </label>
+                <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">
+                  ✓ 100% Identical Verdict
+                </span>
+              </div>
+              <div className="w-full bg-neutral-900 border border-emerald-500/30 rounded-xl p-4 text-xs font-mono text-emerald-100 whitespace-pre-wrap leading-relaxed shadow-inner min-h-[140px]">
+                {activeCompressedResponse}
+              </div>
             </div>
           </div>
         </div>
