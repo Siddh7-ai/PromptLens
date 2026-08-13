@@ -5,6 +5,7 @@ import { OptimizationBar } from './components/OptimizationBar';
 import { BenchmarkTable } from './components/BenchmarkTable';
 import { RequestStream } from './components/RequestStream';
 import { Playground } from './components/Playground';
+import { OutputVerification } from './components/OutputVerification';
 import { VaultInspector } from './components/VaultInspector';
 import { SavingsChart } from './components/SavingsChart';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -52,6 +53,7 @@ export const App: React.FC = () => {
         'installation',
         'how-compression-works',
         'playground',
+        'output-verification',
         'vault',
         'analytics',
         'benchmarks',
@@ -198,9 +200,11 @@ export const App: React.FC = () => {
 
           {currentView === 'playground' && <Playground />}
 
+          {currentView === 'output-verification' && <OutputVerification />}
+
           {currentView === 'analytics' && (
             <div className="space-y-6">
-              <SavingsChart requests={metrics.recent_requests} metrics={metrics} />
+              <SavingsChart requests={metrics.recent_requests} />
               <DisciplineStats metrics={metrics} />
             </div>
           )}

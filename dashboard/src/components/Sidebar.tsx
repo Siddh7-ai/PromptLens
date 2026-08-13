@@ -15,6 +15,7 @@ import {
   HelpCircle,
   BarChart3,
   ShieldCheck,
+  GitCompare,
   X
 } from 'lucide-react';
 
@@ -24,6 +25,7 @@ export type NavView =
   | 'installation'
   | 'how-compression-works'
   | 'playground'
+  | 'output-verification'
   | 'vault'
   | 'analytics'
   | 'benchmarks'
@@ -80,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { id: 'how-compression-works', label: 'How Compression Works', icon: BookOpen, iconColor: 'text-emerald-400' },
         { id: 'playground', label: 'Interactive Playground ✨', icon: Play, iconColor: 'text-emerald-400' },
+        { id: 'output-verification', label: 'Output Verification 🔍', icon: GitCompare, iconColor: 'text-emerald-400' },
       ],
     },
     {
