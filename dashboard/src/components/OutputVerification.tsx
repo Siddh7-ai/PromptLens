@@ -333,8 +333,8 @@ export const OutputVerification: React.FC = () => {
         <textarea
           value={customPrompt}
           onChange={(e) => setCustomPrompt(e.target.value)}
-          rows={5}
-          className="w-full bg-neutral-950 text-neutral-200 border border-neutral-800 rounded-xl p-3.5 text-xs font-mono focus:outline-none focus:border-neutral-700 resize-none leading-relaxed"
+          rows={14}
+          className="w-full bg-neutral-950 text-neutral-200 border border-neutral-800 rounded-xl p-4 text-xs font-mono focus:outline-none focus:border-neutral-700 resize-y min-h-[220px] leading-relaxed shadow-inner"
           placeholder="Paste custom log, JSON, or code prompt to test..."
         />
 
