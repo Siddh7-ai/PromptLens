@@ -1,6 +1,6 @@
 // PromptLens Background Service Worker (Manifest V3 - 100% Synced Vault Persistence)
 
-const PROMPTLENS_API_BASE = 'http://localhost:8000';
+const PROMPTLENS_API_BASE = 'http://127.0.0.1:8000';
 
 async function sha256Hex12(text) {
   const encoder = new TextEncoder();
@@ -170,6 +170,22 @@ chrome.runtime.onInstalled.addListener(() => {
       chrome.storage.local.set({ compression_mode: 'auto', tokens_saved: 0, requests_count: 0 });
     }
   });
+});
+
+// Guaranteed 0ms Action Click Handler: Opens dedicated floating popup window on icon click
+chrome.action.onClicked.addListener((tab) => {
+  const popupUrl = chrome.runtime.getURL('popup.html');
+  if (chrome.windows && chrome.windows.create) {
+    chrome.windows.create({
+      url: popupUrl,
+      type: 'popup',
+      width: 380,
+      height: 520,
+      focused: true
+    });
+  } else {
+    chrome.tabs.create({ url: popupUrl });
+  }
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

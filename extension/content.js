@@ -3,7 +3,7 @@
 (function () {
   console.log('⚡ PromptLens Web AI Context Optimizer Pro active.');
 
-  let currentMode = 'manual';
+  let currentMode = 'auto';
   const processedMessageContainers = new Set();
   let isAutoRetrieving = false;
   let pillResetTimeout = null;
@@ -602,18 +602,43 @@
   try {
     if (chrome.storage && chrome.storage.local) {
       chrome.storage.local.get(['compression_mode'], (store) => {
-        currentMode = (store && store.compression_mode) || 'manual';
+        currentMode = (store && store.compression_mode) || 'auto';
         updatePillText();
       });
 
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area === 'local' && changes.compression_mode) {
-          currentMode = changes.compression_mode.newValue || 'manual';
+          currentMode = changes.compression_mode.newValue || 'auto';
           updatePillText();
         }
       });
     }
   } catch {}
+
+  // Global Capture-Phase Enter Key Interceptor for Web AI Platforms
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.altKey && !e.ctrlKey) {
+      if (currentMode !== 'auto') return;
+
+      const inputEl = getActiveInput();
+      if (!inputEl) return;
+
+      // Ensure cursor/focus is inside or targeting the active AI prompt input box
+      const isFocused = document.activeElement === inputEl || inputEl.contains(document.activeElement);
+      if (!isFocused && !inputEl.isContentEditable) return;
+
+      const rawText = getInputValue(inputEl);
+      if (rawText && rawText.length >= 150 && !rawText.includes('[PROMPT LENS TRUNCATED') && !rawText.includes('[PromptLens:')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+
+        compressActiveInput(() => {
+          setTimeout(triggerSendButtonClick, 150);
+        });
+      }
+    }
+  }, true);
 
   document.addEventListener('keydown', (e) => {
     if (e.altKey && e.key.toLowerCase() === 'c') {

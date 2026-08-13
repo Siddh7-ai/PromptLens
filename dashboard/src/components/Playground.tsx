@@ -11,6 +11,96 @@ const DEFAULT_PYTEST_PROMPT =
   Array.from({ length: 25 }, (_, i) => `  File "worker_${i}.py", line ${i * 5}, in process_task`).join('\n') + '\n' +
   'ConnectionError: Could not connect to PostgreSQL server at 127.0.0.1:5432';
 
+const DEFAULT_GITDIFF_PROMPT =
+  'diff --git a/src/proxy/server.py b/src/proxy/server.py\n' +
+  'index 8a3f1b..9c4d2e 100644\n' +
+  '--- a/src/proxy/server.py\n' +
+  '+++ b/src/proxy/server.py\n' +
+  '@@ -105,30 +105,38 @@ class ProxyMetricsTracker:\n' +
+  '     def record_request(self, original_tokens: int, compressed_tokens: int):\n' +
+  '         self.total_requests += 1\n' +
+  '         self.total_original_tokens += original_tokens\n' +
+  '         self.total_compressed_tokens += compressed_tokens\n' +
+  '         self.tokens_saved = self.total_original_tokens - self.total_compressed_tokens\n' +
+  '\n' +
+  '     def get_summary(self) -> dict:\n' +
+  '         savings_percent = 0.0\n' +
+  '         if self.total_original_tokens > 0:\n' +
+  '             savings_percent = (self.tokens_saved / self.total_original_tokens) * 100.0\n' +
+  '         return {\n' +
+  '             \'total_requests\': self.total_requests,\n' +
+  '             \'total_original\': self.total_original_tokens,\n' +
+  '             \'total_compressed\': self.total_compressed_tokens,\n' +
+  '             \'saved\': self.tokens_saved,\n' +
+  '             \'savings_percent\': round(savings_percent, 2)\n' +
+  '         }\n' +
+  '\n' +
+  '@@ -150,25 +158,35 @@ async def process_anthropic_payload(payload: dict) -> dict:\n' +
+  '     if not isinstance(payload, dict):\n' +
+  '         return payload\n' +
+  '     \n' +
+  '     messages = payload.get(\'messages\', [])\n' +
+  '     for msg in messages:\n' +
+  '         if msg.get(\'role\') == \'user\':\n' +
+  '             content = msg.get(\'content\')\n' +
+  '             if isinstance(content, str):\n' +
+  '-                compressed = compress_text(content)\n' +
+  '-                msg[\'content\'] = compressed.compressed_str\n' +
+  '+                res = compress_text(content)\n' +
+  '+                msg[\'content\'] = res.compressed_str\n' +
+  '+                metrics_tracker.record_request(res.original_tokens, res.compressed_tokens)\n' +
+  '             elif isinstance(content, list):\n' +
+  '                 for block in content:\n' +
+  '                     if block.get(\'type\') == \'text\' and \'text\' in block:\n' +
+  '-                        compressed = compress_text(block[\'text\'])\n' +
+  '-                        block[\'text\'] = compressed.compressed_str\n' +
+  '+                        res = compress_text(block[\'text\'])\n' +
+  '+                        block[\'text\'] = res.compressed_str\n' +
+  '+                        metrics_tracker.record_request(res.original_tokens, res.compressed_tokens)\n' +
+  '     return payload\n' +
+  '\n' +
+  'diff --git a/src/compress/text_compressor.py b/src/compress/text_compressor.py\n' +
+  'index f21e8d..e49a1c 100644\n' +
+  '--- a/src/compress/text_compressor.py\n' +
+  '+++ b/src/compress/text_compressor.py\n' +
+  '@@ -45,25 +45,35 @@ def compress_text(text: str, head_lines: int = 10, tail_lines: int = 10) -> Text:\n' +
+  '     if original_tokens < min_token_threshold:\n' +
+  '         return TextCompressionResult(\n' +
+  '             compressed_str=text,\n' +
+  '             retrieval_id=retrieval_id,\n' +
+  '             original_tokens=original_tokens,\n' +
+  '             compressed_tokens=original_tokens,\n' +
+  '             is_compressed=False,\n' +
+  '             compression_ratio=0.0\n' +
+  '         )\n' +
+  '\n' +
+  '     lines = text.splitlines()\n' +
+  '     if len(lines) <= (head_lines + tail_lines + 1):\n' +
+  '         return TextCompressionResult(\n' +
+  '             compressed_str=text,\n' +
+  '             retrieval_id=retrieval_id,\n' +
+  '             original_tokens=original_tokens,\n' +
+  '             compressed_tokens=original_tokens,\n' +
+  '             is_compressed=False,\n' +
+  '             compression_ratio=0.0\n' +
+  '         )\n' +
+  '\n' +
+  '     head = lines[:head_lines]\n' +
+  '     tail = lines[-tail_lines:]\n' +
+  '     omitted = len(lines) - (head_lines + tail_lines)\n' +
+  '     marker = f\'--- [PROMPT LENS TRUNCATED {omitted} lines (total: {len(lines)}). Use retrieve_original("retrieval_id") for full text] ---\'\n' +
+  '     compressed_str = \'\\n\'.join(head + [marker] + tail)\n' +
+  '     compressed_tokens = get_token_count(compressed_str)\n' +
+  '\n' +
+  '     return TextCompressionResult(\n' +
+  '         compressed_str=compressed_str,\n' +
+  '         retrieval_id=retrieval_id,\n' +
+  '         original_tokens=original_tokens,\n' +
+  '         compressed_tokens=compressed_tokens,\n' +
+  '         is_compressed=True,\n' +
+  '         compression_ratio=round(1.0 - (compressed_tokens / original_tokens), 4)\n' +
+  '     )';
+
 const SAMPLE_PRESETS: Record<string, string> = {
   pytest: DEFAULT_PYTEST_PROMPT,
   json: JSON.stringify(
@@ -24,18 +114,7 @@ const SAMPLE_PRESETS: Record<string, string> = {
     null,
     2
   ),
-  gitdiff:
-    'diff --git a/src/proxy/server.py b/src/proxy/server.py\n' +
-    'index 8a3f1b..9c4d2e 100644\n' +
-    '--- a/src/proxy/server.py\n' +
-    '+++ b/src/proxy/server.py\n' +
-    '@@ -120,6 +120,8 @@ def process_anthropic_payload(payload):\n' +
-    '     # Unchanged context line 1\n' +
-    '     # Unchanged context line 2\n' +
-    '+    baseline_tokens = get_token_count(json.dumps(payload))\n' +
-    '+    processed_payload = compress_tool_results(payload)\n' +
-    '     # Unchanged context line 3\n' +
-    '     # Unchanged context line 4',
+  gitdiff: DEFAULT_GITDIFF_PROMPT,
 };
 
 export const Playground: React.FC = () => {

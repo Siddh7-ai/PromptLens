@@ -195,3 +195,63 @@ def test_toc_excludes_comment_lines():
     # Individual comment lines must NOT be separate ToC items
     assert "- Lines 12-12: # Comment line 1" not in result.compressed_str
     assert "- Lines 13-13: # Comment line 2" not in result.compressed_str
+
+
+def test_webpack_warn_deprecation_not_pinned():
+    webpack_log_lines = [
+        "Hash: 8a9b0c1d2e3f",
+        "Version: webpack 5.88.2",
+        "Time: 3450ms",
+        "Built at: 2026-08-07 14:20:00",
+        "Entrypoint main = main.js",
+    ] + [
+        f"[14:20:0{i%10}] WARN  [dep-00{i%5}] DeprecationWarning: Buffer() is deprecated due to security issues. Line detail {i}"
+        for i in range(30)
+    ] + [
+        "[14:20:10] WARN  [dep-999] Module Warning (from ./node_modules/babel-loader): Critical dependency: expression",
+        "assets by status 1.2 MiB [cached] 12 assets",
+        "webpack 5.88.2 compiled with 31 warnings in 3450 ms",
+    ]
+    log_content = "\n".join(webpack_log_lines)
+
+    result = compress_text(log_content, head_lines=4, tail_lines=4)
+    assert result.is_compressed is True
+    # Routine deprecation warnings must NOT be re-pinned into middle errors block
+    assert "[PromptLens Pinned Middle Errors/Exceptions]" not in result.compressed_str or "DeprecationWarning: Buffer()" not in result.compressed_str
+    assert "DeprecationWarning" not in (result.compressed_str.split("[PromptLens Pinned Middle Errors/Exceptions]")[1] if "[PromptLens Pinned Middle Errors/Exceptions]" in result.compressed_str else "")
+
+
+def test_typescript_ts2304_ts2322_pinned_and_toc_suppressed():
+    ts_build_log_lines = [
+        "Compiling frontend application...",
+        "tsc --noEmit --project tsconfig.json",
+        "Running TypeScript type checker...",
+        "Starting compilation unit target ES2022...",
+        "Analyzing 145 files...",
+        "Failed to compile.",
+        "",
+        "src/components/UserCard.tsx:15:23 - error TS2304: Cannot find name 'UserRole'.",
+        "",
+        "  15 |   role: UserRole;",
+        "     |         ^^^^^^^^",
+        "",
+        "src/components/UserCard.tsx:28:5 - error TS2322: Type 'string' is not assignable to type 'number'.",
+        "",
+        "  28 |   age: \"twenty\";",
+        "     |        ^^^^^^^^",
+        "",
+    ] + [f"  {i} |   internalLineProperty_{i}: boolean;" for i in range(30)] + [
+        "Found 2 errors in src/components/UserCard.tsx",
+        "npm ERR! Build failed with exit code 1",
+    ]
+    ts_log_content = "\n".join(ts_build_log_lines)
+
+    result = compress_text(ts_log_content, head_lines=4, tail_lines=4)
+    assert result.is_compressed is True
+    # Structural Index ToC must NOT appear on build logs
+    assert "[PromptLens Structural Index]" not in result.compressed_str
+    # Actual TS errors must be pinned in middle errors block
+    assert "[PromptLens Pinned Middle Errors/Exceptions]" in result.compressed_str
+    assert "TS2304: Cannot find name 'UserRole'" in result.compressed_str
+    assert "TS2322: Type 'string' is not assignable to type 'number'" in result.compressed_str
+

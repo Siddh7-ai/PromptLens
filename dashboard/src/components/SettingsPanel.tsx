@@ -47,14 +47,73 @@ export const SettingsPanel: React.FC = () => {
     }
   };
 
-  const handleReset = () => {
-    setSettings({
+  const handleReset = async () => {
+    const defaults: CompressionSettings = {
       head_lines: 10,
       tail_lines: 10,
       max_json_array: 50,
       min_tokens_threshold: 100,
       discipline_mode: 'off',
-    });
+    };
+    setSettings(defaults);
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(defaults),
+      });
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to reset settings:', err);
+    }
+  };
+
+  const MODE_PRESETS: Record<string, CompressionSettings> = {
+    off: {
+      head_lines: 10,
+      tail_lines: 10,
+      max_json_array: 50,
+      min_tokens_threshold: 100,
+      discipline_mode: 'off',
+    },
+    lite: {
+      head_lines: 8,
+      tail_lines: 8,
+      max_json_array: 30,
+      min_tokens_threshold: 80,
+      discipline_mode: 'lite',
+    },
+    full: {
+      head_lines: 5,
+      tail_lines: 5,
+      max_json_array: 20,
+      min_tokens_threshold: 50,
+      discipline_mode: 'full',
+    },
+    ultra: {
+      head_lines: 3,
+      tail_lines: 3,
+      max_json_array: 10,
+      min_tokens_threshold: 30,
+      discipline_mode: 'ultra',
+    },
+  };
+
+  const handleModeSelect = async (mode: 'off' | 'lite' | 'full' | 'ultra') => {
+    const preset = MODE_PRESETS[mode];
+    setSettings(preset);
+    try {
+      await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(preset),
+      });
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to apply mode settings:', err);
+    }
   };
 
   return (
@@ -169,7 +228,7 @@ export const SettingsPanel: React.FC = () => {
                 <button
                   key={mode}
                   type="button"
-                  onClick={() => setSettings({ ...settings, discipline_mode: mode })}
+                  onClick={() => handleModeSelect(mode)}
                   className={`py-2 px-3 rounded-lg text-xs font-semibold uppercase border transition text-center ${
                     (settings.discipline_mode || 'off').toLowerCase() === mode
                       ? 'bg-white text-black border-white'

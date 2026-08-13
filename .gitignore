@@ -23,6 +23,11 @@ dashboard/dist/
 .env
 .env.local
 
+# Temp build & scratch files
+dashboard/vite.config.ts.timestamp-*.mjs
+*.bak
+scratch/
+
 # Personal / College Notes
 VIVA_FAQ.md
 MONTH*.md

@@ -14,11 +14,11 @@ export const SavingsChart: React.FC<SavingsChartProps> = ({ requests }) => {
     requests.length > 0
       ? requests.slice(0, 6)
       : [
-          { id: 1, path: 'large_json_array.json', baseline_tokens: 118154, compressed_tokens: 991, savings_pct: 99.2 },
-          { id: 2, path: 'pytest_failure.log', baseline_tokens: 1061, compressed_tokens: 829, savings_pct: 21.9 },
-          { id: 3, path: 'env_vars.txt', baseline_tokens: 947, compressed_tokens: 657, savings_pct: 30.6 },
-          { id: 4, path: 'git_diff.patch', baseline_tokens: 606, compressed_tokens: 498, savings_pct: 17.8 },
-          { id: 5, path: 'npm_build.log', baseline_tokens: 376, compressed_tokens: 376, savings_pct: 0.0 },
+          { id: 1, path: 'large_json_array.json', baseline_tokens: 118154, compressed_tokens: 991, savings_pct: 99.2, retrieval_id: '-' },
+          { id: 2, path: 'pytest_failure.log', baseline_tokens: 1061, compressed_tokens: 829, savings_pct: 21.9, retrieval_id: '-' },
+          { id: 3, path: 'env_vars.txt', baseline_tokens: 947, compressed_tokens: 657, savings_pct: 30.6, retrieval_id: '-' },
+          { id: 4, path: 'git_diff.patch', baseline_tokens: 606, compressed_tokens: 498, savings_pct: 17.8, retrieval_id: '-' },
+          { id: 5, path: 'npm_build.log', baseline_tokens: 376, compressed_tokens: 376, savings_pct: 0.0, retrieval_id: '-' },
         ];
 
   const totalBaseline = rawChartData.reduce((acc, d) => acc + d.baseline_tokens, 0);
@@ -323,8 +323,13 @@ export const SavingsChart: React.FC<SavingsChartProps> = ({ requests }) => {
                       />
                     </div>
 
-                    <span className="text-[11px] font-mono text-neutral-300 truncate w-full text-center font-semibold">
-                      {item.path}
+                    <span
+                      className="text-[11px] font-mono text-neutral-300 truncate w-full text-center font-semibold"
+                      title={`Path: ${item.path} | Retrieval ID: ${item.retrieval_id || 'N/A'}`}
+                    >
+                      {item.path === '/api/compress'
+                        ? `Playground (${item.retrieval_id && item.retrieval_id !== '-' ? '#' + item.retrieval_id.slice(0, 6) : 'Req #' + item.id})`
+                        : item.path}
                     </span>
                   </div>
                 );

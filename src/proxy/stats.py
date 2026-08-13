@@ -45,11 +45,17 @@ class MetricsTracker:
         self._load_from_disk()
 
     def _load_from_disk(self) -> None:
-        """Loads metrics from disk file if available."""
-        if not self.storage_path or not os.path.exists(self.storage_path):
+        """Loads metrics from disk file if available, with backup file fallback."""
+        target_path = self.storage_path
+        if target_path and not os.path.exists(target_path):
+            bak_path = f"{target_path}.bak"
+            if os.path.exists(bak_path):
+                target_path = bak_path
+
+        if not target_path or not os.path.exists(target_path):
             return
         try:
-            with open(self.storage_path, "r", encoding="utf-8") as f:
+            with open(target_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 self.total_requests = data.get("total_requests", 0)
                 self.total_baseline_tokens = data.get("total_baseline_tokens", 0)
@@ -63,6 +69,7 @@ class MetricsTracker:
                         self.discipline_stats[k]["output_tokens"] = v.get("output_tokens", 0)
         except Exception:
             pass
+
 
     def _save_to_disk(self) -> None:
         """Saves current metrics snapshot to disk file."""
@@ -156,17 +163,15 @@ class MetricsTracker:
         }
 
     def reset(self) -> None:
-        """Resets all metrics to zero and clears disk file."""
-        self.total_requests = 0
-        self.total_baseline_tokens = 0
-        self.total_compressed_tokens = 0
-        self.total_retrievals = 0
-        self.request_logs.clear()
+        """Restores cumulative metrics from backup file metrics.json.bak to prevent accidental wipe."""
         if self.storage_path and os.path.exists(self.storage_path):
             try:
                 os.remove(self.storage_path)
             except Exception:
                 pass
+        self._load_from_disk()
+        self._save_to_disk()
+
 
 
 # Shared Global Metrics Tracker Instance

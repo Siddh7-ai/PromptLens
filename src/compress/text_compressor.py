@@ -27,19 +27,49 @@ def get_token_count(text: str) -> int:
         return len(text.split())
 
 
+def is_log_or_build_output(lines: list[str]) -> bool:
+    """
+    Detects if lines represent terminal logs, build logs, stack traces, or test outputs
+    where a Structural Index ToC should NOT be generated.
+    """
+    log_indicators = (
+        "npm ", "yarn ", "pnpm ", "pip ", "docker ", "cargo ", "pytest ", "vite ", "webpack ", "tsc ",
+        "[ERROR]", "[WARN]", "[INFO]", "[DEBUG]", "[WARNING]", "ERROR:", "WARNING:", "WARN:",
+        "Traceback (most recent call last):", "FAILURES", "ERRORS", "Failed to compile",
+        "compilation failed", "Exit status", "Exit code", "dist/assets/", "modules transformed"
+    )
+    matches = 0
+    for line in lines[:30]:
+        stripped = line.strip()
+        # Check explicit log markers or timestamp prefixes
+        if any(ind in stripped for ind in log_indicators) or re.match(r'^\s*\[?\d{2,4}[-/:T\s]\d{2}:\d{2}:?\d{2}', stripped):
+            matches += 1
+        # Code snippet line gutters in compiler error outputs e.g. "27 | userId: string;"
+        elif re.match(r'^\s*\d+\s*\|', stripped):
+            matches += 1
+        # TypeScript error format e.g. "error TS2304:" or "TS2304:"
+        elif re.search(r'\b(?:error\s+)?TS\d{4,5}\b', stripped, re.IGNORECASE):
+            matches += 1
+
+    return matches >= 2
+
+
 def generate_structural_index(lines: list[str], max_entries: int = 35) -> str:
     """
-    Parses code or structured text across Python, JS/TS, Rust, Go, Java, C/C++, SQL, Logs,
-    and Markdown. Scans ALL lines to generate a complete Table of Contents.
+    Parses code or structured documentation across Python, JS/TS, Rust, Go, Java, C/C++, SQL,
+    and Markdown to generate a Table of Contents. Excludes build logs and unstructured text.
     """
+    if is_log_or_build_output(lines):
+        return ""
+
     sections = []
     current_symbol = None
     symbol_start = 1
 
     symbol_prefixes = (
         "class ", "def ", "async def ", "function ", "async function ",
-        "struct ", "impl ", "enum ", "trait ", "func ", "type ",
-        "export default ", "export function ", "export class ",
+        "struct ", "impl ", "enum ", "trait ", "func ", "type ", "interface ",
+        "export default ", "export function ", "export class ", "export interface ", "export type ",
         "public ", "private ", "protected ", "static ", "void ",
         "SELECT ", "CREATE TABLE ", "INSERT INTO ", "UPDATE ", "DELETE FROM ",
         "## ", "### ", "#### "
@@ -53,6 +83,11 @@ def generate_structural_index(lines: list[str], max_entries: int = 35) -> str:
 
     for idx, line in enumerate(lines, 1):
         stripped = line.strip()
+
+        # Skip log output lines or compiler error snippet line gutters e.g. "27 | userId: string;"
+        if re.match(r'^\s*\d+\s*\|', stripped):
+            continue
+
         # Single '#' only matches if it's a top-level Markdown title, not a code comment
         is_markdown_title = stripped.startswith("# ") and not any(kw in stripped for kw in ("=", "(", ":", "import ", "from "))
         is_match = stripped.startswith(symbol_prefixes) or is_markdown_title or bool(generic_pattern.match(stripped))
@@ -68,14 +103,6 @@ def generate_structural_index(lines: list[str], max_entries: int = 35) -> str:
     if current_symbol and len(lines) >= symbol_start:
         sections.append(f"Lines {symbol_start}-{len(lines)}: {current_symbol}")
 
-    # Fallback Block Chunking for completely unstructured plain text or filler lines
-    if not sections and len(lines) > 20:
-        chunk_size = max(10, len(lines) // 6)
-        for start_idx in range(1, len(lines) + 1, chunk_size):
-            end_idx = min(len(lines), start_idx + chunk_size - 1)
-            first_words = " ".join(lines[start_idx-1].strip().split()[:5]) or "Content Block"
-            sections.append(f"Lines {start_idx}-{end_idx}: {first_words}...")
-
     if not sections:
         return ""
 
@@ -85,30 +112,72 @@ def generate_structural_index(lines: list[str], max_entries: int = 35) -> str:
 
 def find_error_anchors(lines: list[str], start_line_offset: int = 1) -> list[tuple[int, str]]:
     """
-    Scans lines for error and exception keywords and returns pinned anchor lines
-    with accurate 1-indexed line numbers.
+    Scans lines for genuine error and exception keywords and returns pinned anchor lines
+    with accurate 1-indexed line numbers. Excludes routine warnings and deprecation logs.
     """
     anchors = []
     error_keywords = (
-        "exception", "fail", "warning", "fatal", "traceback", "critical",
+        "exception", "fatal", "traceback",
         "keyerror", "valueerror", "typeerror", "assertionerror", "runtimeerror",
-        "attributeerror", "syntaxerror", "nameerror", "indexerror"
+        "attributeerror", "syntaxerror", "nameerror", "indexerror", "importerror",
+        "modulenotfounderror", "referenceerror", "filenotfounderror", "permissionerror"
     )
+
     for idx, line in enumerate(lines):
-        # Strip common log prefixes (e.g. "npm error", "[ERROR]") before checking keywords
-        clean_line = re.sub(r'^(?:npm error|npm WARN|\[ERROR\]|\[WARN\]|ERROR:|WARNING:)\s*', '', line, flags=re.IGNORECASE).strip()
+        # Strip timestamps e.g. "[14:20:04]" or "14:20:04"
+        line_no_ts = re.sub(r'^\s*(?:\[?\d{2,4}[-/:T\s]\d{2}:\d{2}:?\d{2}(?:\.\d+)?Z?\]?\s*|\[?\d{2}:\d{2}:\d{2}\]?\s*)', '', line).strip()
+
+        # Strip common log prefixes (e.g. "npm error", "npm WARN", "[ERROR]", "[WARN]")
+        clean_line = re.sub(r'^(?:npm error|npm WARN|yarn error|yarn WARN|\[ERROR\]|\[WARN\]|\[WARNING\]|\[INFO\]|\[DEBUG\]|ERROR:|WARNING:|WARN:)\s*', '', line_no_ts, flags=re.IGNORECASE).strip()
         clean_lower = clean_line.lower()
+
+        # Check if this line is a warning or deprecation line
+        is_warning = (
+            "deprecationwarning" in clean_lower or
+            clean_lower.startswith("warn ") or clean_lower.startswith("warning:") or clean_lower.startswith("warn:") or
+            bool(re.search(r'\b(?:warn|warning|deprecation|deprecationwarning)\b', clean_lower))
+        )
+
+        # Check if line contains an explicit error signal or code
+        has_explicit_error_code = bool(re.search(
+            r'\b(?:error\s+)?TS\d{4,5}\b|\bTypeError\b|\bSyntaxError\b|\bKeyError\b|\bValueError\b|\bAssertionError\b|\bRuntimeError\b|\bAttributeError\b|\bNameError\b|\bIndexError\b|\bFailed to compile\b|\bFAILURES\b|\b\[ERROR\]\b|\bnpm error\b|\bERR_\w+\b',
+            line,
+            re.IGNORECASE
+        ))
+
+        # Skip routine deprecation warnings or informational warning lines unless they contain an explicit error code
+        if is_warning and not has_explicit_error_code:
+            continue
 
         is_error = (
             any(kw in clean_lower for kw in error_keywords) or
-            bool(re.search(r'\b\w+(?:Error|Exception)\b', clean_line)) or
-            bool(re.search(r'\b(?:error\s+TS\d+|FAILED)\b', clean_line, re.IGNORECASE))
+            bool(re.search(r'\b\w+(?:Error|Exception)\b', clean_line, re.IGNORECASE)) or
+            bool(re.search(
+                r'\btype\s+error\b|\bsyntax\s+error\b|\bcannot\s+find\s+name\b|\bis\s+not\s+assignable\b|\bdoes\s+not\s+exist\s+on\s+type\b|\bcannot\s+find\s+module\b|\bhas\s+no\s+exported\s+member\b|\bfailed\s+to\s+compile\b|\bcompilation\s+failed\b',
+                clean_line,
+                re.IGNORECASE
+            )) or
+            bool(re.search(r'\b(?:error\s+)?TS\d{4,5}\b', clean_line, re.IGNORECASE)) or
+            bool(re.search(r'\b(?:error\s+TS\d+|FAILED|FAILURES)\b', clean_line, re.IGNORECASE))
         )
 
         if is_error:
             anchors.append((start_line_offset + idx, line))
-            if len(anchors) >= 4:
-                break
+
+    # Prioritize specific error lines over generic header lines if anchors exceed limit (max 6 anchors)
+    if len(anchors) > 6:
+        specific_anchors = [
+            a for a in anchors
+            if re.search(r'\b(?:error\s+)?TS\d{4,5}\b|\b\w+(?:Error|Exception)\b|\bcannot\s+find\b|\bis\s+not\s+assignable\b', a[1], re.IGNORECASE)
+        ]
+        if len(specific_anchors) >= 2:
+            anchors = specific_anchors[:6]
+        else:
+            # Combine generic headers + specific errors up to 6
+            anchors = anchors[:6]
+    else:
+        anchors = anchors[:6]
+
     return anchors
 
 

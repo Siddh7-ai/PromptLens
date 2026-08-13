@@ -101,18 +101,20 @@ def _filter_headers(headers: httpx.Headers | dict) -> dict:
 
 def _compress_tool_content(content: str) -> tuple[str, str | None, float]:
     """
-    Compress string or JSON content if it exceeds length thresholds.
+    Compress string or JSON content if it exceeds length thresholds using live COMPRESSION_SETTINGS.
     Returns: (new_content, hash_id_if_compressed, compression_ratio)
     """
-    if len(content) < MIN_COMPRESS_BYTES:
-        return content, None, 0.0
+    head_lines = COMPRESSION_SETTINGS.get("head_lines", 10)
+    tail_lines = COMPRESSION_SETTINGS.get("tail_lines", 10)
+    max_json_array = COMPRESSION_SETTINGS.get("max_json_array", 50)
+    min_tokens_threshold = COMPRESSION_SETTINGS.get("min_tokens_threshold", 100)
 
     try:
         # Try JSON compression first
         try:
             json_obj = json.loads(content)
             if isinstance(json_obj, (dict, list)):
-                result = compress_json(content)
+                result = compress_json(content, max_array_items=max_json_array)
                 if result.is_compressed:
                     stored_id = retrieval_store.save(content)
                     savings_pct = f"{(result.compression_ratio * 100):.1f}%"
@@ -124,8 +126,13 @@ def _compress_tool_content(content: str) -> tuple[str, str | None, float]:
         except Exception:
             pass
 
-        # Fallback to Text compression
-        result = compress_text(content)
+        # Fallback to Text compression with live head_lines, tail_lines, and min_tokens_threshold
+        result = compress_text(
+            content,
+            head_lines=head_lines,
+            tail_lines=tail_lines,
+            min_token_threshold=min_tokens_threshold
+        )
         if result.is_compressed:
             stored_id = retrieval_store.save(content)
             savings_pct = f"{(result.compression_ratio * 100):.1f}%"
@@ -274,6 +281,14 @@ async def get_stats():
     return metrics_tracker.get_summary()
 
 
+@app.post("/api/stats/reset")
+async def reset_stats():
+    """Resets all stored metrics to 0."""
+    metrics_tracker.reset()
+    return {"status": "reset", "summary": metrics_tracker.get_summary()}
+
+
+
 @app.get("/api/vault")
 async def get_vault_items():
     """Returns list of active uncompressed payloads stored in the vault."""
@@ -367,8 +382,9 @@ def process_openai_payload(payload: dict[str, Any]) -> tuple[dict[str, Any], str
                     has_compressed_items = True
                     last_stored_id = stored_id
 
-    if has_compressed_items:
-        tools = payload.get("tools", [])
+    # Only inject retrieve_original if client explicitly provided a tools array
+    if has_compressed_items and "tools" in payload and isinstance(payload["tools"], list):
+        tools = payload["tools"]
         retrieval_tool = {
             "type": "function",
             "function": {
@@ -401,9 +417,10 @@ async def get_dashboard():
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"])
 async def proxy_passthrough(request: Request, path: str):
     """
-    HTTP passthrough proxy with compression, metrics tracking, and tool injection for Anthropic & OpenAI APIs.
+    HTTP passthrough proxy with compression, metrics tracking, and tool injection for Anthropic, OpenAI & Ollama APIs.
     """
-    target_url = f"{TARGET_BASE_URL}/{path}"
+    base_target = request.headers.get("x-target-base-url") or request.headers.get("x-target-url") or TARGET_BASE_URL
+    target_url = f"{base_target.rstrip('/')}/{path}"
     if request.url.query:
         target_url = f"{target_url}?{request.url.query}"
 

@@ -141,16 +141,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     .filter((cat) => cat.items.length > 0);
 
   return (
-    <aside className="w-64 bg-[#080808] border-r border-[#1a1a1a] flex flex-col justify-between h-screen sticky top-0 shrink-0 select-none">
-      <div className="p-4 space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-800">
+    <aside className="w-68 md:w-72 bg-[#080808] border-r border-[#1a1a1a] flex flex-col justify-between h-screen sticky top-0 shrink-0 select-none">
+      <div className="p-4 space-y-5 overflow-y-auto scrollbar-thin scrollbar-thumb-neutral-800">
         {/* Header Logo */}
         <div
           onClick={() => navigateTo('overview')}
           className="flex items-center space-x-3 px-2 pt-1 cursor-pointer group"
         >
-          <PromptLensLogo className="w-7 h-5 object-contain" />
+          <PromptLensLogo className="w-8 h-6 object-contain" />
           <div className="flex items-center space-x-2">
-            <span className="font-extrabold text-base tracking-tight text-white">PromptLens</span>
+            <span className="font-extrabold text-lg tracking-tight text-white">PromptLens</span>
             <span className="px-1.5 py-0.5 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded">
               v0.1
             </span>
@@ -159,13 +159,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Search Bar */}
         <div className="relative px-1 pt-1">
-          <Search className="w-3.5 h-3.5 text-neutral-500 absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-neutral-500 absolute left-3.5 top-3" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search docs or vault..."
-            className="w-full bg-[#121212] text-xs text-neutral-200 placeholder-neutral-500 border border-[#222222] rounded-xl pl-8 pr-8 py-1.5 focus:outline-none focus:border-emerald-500/50 transition font-sans"
+            className="w-full bg-[#121212] text-sm text-neutral-200 placeholder-neutral-500 border border-[#222222] rounded-xl pl-9 pr-8 py-2 focus:outline-none focus:border-emerald-500/50 transition font-sans"
           />
           {searchQuery && (
             <button
@@ -173,17 +173,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="absolute right-3 top-2.5 text-neutral-500 hover:text-white transition"
               title="Clear search"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
         {/* Headroom Sidebar Categories */}
-        <div className="space-y-4 pt-2 text-xs">
+        <div className="space-y-5 pt-1 text-sm">
           {filteredCategories.length > 0 ? (
             filteredCategories.map((category) => (
               <div key={category.title} className="space-y-1">
-                <div className="px-3 text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center justify-between">
+                <div className="px-3 text-[11px] font-bold text-neutral-400 uppercase tracking-wider flex items-center justify-between">
                   <span>{category.title}</span>
                 </div>
                 {category.items.map((item) => {
@@ -193,15 +193,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <button
                       key={item.id}
                       onClick={() => navigateTo(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg font-medium transition ${
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition ${
                         isActive
                           ? 'bg-neutral-850 text-white font-bold border border-neutral-750'
-                          : 'text-neutral-400 hover:text-white hover:bg-neutral-900/60'
+                          : 'text-neutral-300 hover:text-white hover:bg-neutral-900/70'
                       }`}
                     >
                       <div className="flex items-center space-x-2.5">
-                        <Icon className={`w-3.5 h-3.5 ${item.iconColor || 'text-neutral-400'}`} />
-                        <span>{item.label}</span>
+                        <Icon className={`w-4 h-4 ${item.iconColor || 'text-neutral-400'}`} />
+                        <span className="text-sm">{item.label}</span>
                       </div>
                       {item.badge}
                     </button>
@@ -211,11 +211,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             ))
           ) : (
             <div className="px-3 py-6 text-center space-y-2">
-              <p className="text-xs text-neutral-500">No navigation items found for</p>
-              <p className="text-xs font-mono text-emerald-400 truncate">&quot;{searchQuery}&quot;</p>
+              <p className="text-sm text-neutral-500">No navigation items found for</p>
+              <p className="text-sm font-mono text-emerald-400 truncate">&quot;{searchQuery}&quot;</p>
               <button
                 onClick={() => setSearchQuery('')}
-                className="mt-2 text-[11px] text-neutral-400 hover:text-white underline"
+                className="mt-2 text-xs text-neutral-400 hover:text-white underline"
               >
                 Clear search
               </button>
@@ -226,12 +226,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Footer info */}
       <div className="p-4 border-t border-[#1a1a1a] bg-[#050505]">
-        <div className="flex items-center justify-between text-xs text-neutral-400">
-          <span className="flex items-center gap-1.5 font-medium">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+        <div className="flex items-center justify-between text-sm text-neutral-300">
+          <span className="flex items-center gap-2 font-medium">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
             Proxy Active
           </span>
-          <span className="font-mono text-[10px] text-neutral-500">:8000</span>
+          <span className="font-mono text-xs text-neutral-500">:8000</span>
         </div>
       </div>
     </aside>
