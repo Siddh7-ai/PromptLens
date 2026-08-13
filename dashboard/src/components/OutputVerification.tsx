@@ -157,16 +157,16 @@ export const OutputVerification: React.FC = () => {
         <div className="flex items-center space-x-2.5">
           <Key className="w-4 h-4 text-emerald-400 shrink-0" />
           <div>
-            <span className="text-xs font-bold text-white block">Optional: Connect OpenAI / Claude API Key for Live AI Execution</span>
-            <span className="text-[11px] text-neutral-400 block">Enter your API key to send both raw & compressed prompts to a live LLM model.</span>
+            <span className="text-xs font-bold text-white block">Optional: Connect OpenAI / Claude / Gemini API Key for Live AI Execution</span>
+            <span className="text-[11px] text-neutral-400 block">Enter your API key (OpenAI sk-..., Claude sk-ant-..., or Gemini AIza...) for live LLM verification.</span>
           </div>
         </div>
         <input
           type="password"
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk-proj-... (Optional OpenAI / Claude Key)"
-          className="bg-neutral-950 text-xs text-neutral-200 border border-neutral-800 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-emerald-500/50 w-full sm:w-72"
+          placeholder="sk-... / sk-ant-... / AIza... (API Key)"
+          className="bg-neutral-950 text-xs text-neutral-200 border border-neutral-800 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-emerald-500/50 w-full sm:w-80"
         />
       </div>
 
