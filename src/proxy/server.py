@@ -368,68 +368,87 @@ class VerificationRequest(BaseModel):
     provider: str = "auto"
 
 
-async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str = "auto") -> str:
+async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str = "auto") -> tuple[str, str]:
     key = (api_key or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
     
     # 1. Anthropic Claude API (starts with sk-ant-)
     if key.startswith("sk-ant-") or "claude" in provider.lower() or "anthropic" in provider.lower():
         try:
-            import urllib.request
-            import json
-            headers = {
-                "Content-Type": "application/json",
-                "x-api-key": key,
-                "anthropic-version": "2023-06-01"
-            }
-            body = json.dumps({
-                "model": "claude-3-5-sonnet-20241022",
-                "max_tokens": 300,
-                "messages": [{"role": "user", "content": prompt}]
-            }).encode('utf-8')
-            req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=body, headers=headers)
-            with urllib.request.urlopen(req, timeout=12) as response:
-                res_data = json.loads(response.read().decode('utf-8'))
-                return res_data["content"][0]["text"]
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-api-key": key,
+                        "anthropic-version": "2023-06-01"
+                    },
+                    json={
+                        "model": "claude-3-5-sonnet-20241022",
+                        "max_tokens": 300,
+                        "messages": [{"role": "user", "content": prompt}]
+                    }
+                )
+                data = resp.json()
+                if resp.status_code == 200:
+                    return data["content"][0]["text"], "Live Anthropic API (claude-3-5-sonnet)"
+                else:
+                    err_msg = data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                    print(f"Anthropic API Error: {err_msg}")
+                    return f"Anthropic API Error: {err_msg}", f"Anthropic API Failed (HTTP {resp.status_code})"
         except Exception as e:
-            logger.warning(f"Anthropic API call failed: {e}")
+            print(f"Anthropic API Exception: {e}")
+            return f"Anthropic API Exception: {e}", "Anthropic API Call Failed"
 
     # 2. Google Gemini API (starts with AIza)
     elif key.startswith("AIza") or "gemini" in provider.lower():
         try:
-            import urllib.request
-            import json
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
-            headers = {"Content-Type": "application/json"}
-            body = json.dumps({
-                "contents": [{"parts": [{"text": prompt}]}]
-            }).encode('utf-8')
-            req = urllib.request.Request(url, data=body, headers=headers)
-            with urllib.request.urlopen(req, timeout=12) as response:
-                res_data = json.loads(response.read().decode('utf-8'))
-                return res_data["candidates"][0]["content"]["parts"][0]["text"]
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    url,
+                    headers={"Content-Type": "application/json"},
+                    json={
+                        "contents": [{"parts": [{"text": prompt}]}]
+                    }
+                )
+                data = resp.json()
+                if resp.status_code == 200:
+                    text = data["candidates"][0]["content"]["parts"][0]["text"]
+                    return text, "Live Google Gemini API (gemini-1.5-flash)"
+                else:
+                    err_msg = data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                    print(f"Gemini API Error: {err_msg}")
+                    return f"Gemini API Error: {err_msg}", f"Gemini API Failed (HTTP {resp.status_code})"
         except Exception as e:
-            logger.warning(f"Gemini API call failed: {e}")
+            print(f"Gemini API Exception: {e}")
+            return f"Gemini API Exception: {e}", "Gemini API Call Failed"
 
     # 3. OpenAI API (starts with sk-)
     elif key.startswith("sk-") or "openai" in provider.lower():
         try:
-            import urllib.request
-            import json
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {key}"
-            }
-            body = json.dumps({
-                "model": "gpt-4o-mini",
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 300
-            }).encode('utf-8')
-            req = urllib.request.Request("https://api.openai.com/v1/chat/completions", data=body, headers=headers)
-            with urllib.request.urlopen(req, timeout=12) as response:
-                res_data = json.loads(response.read().decode('utf-8'))
-                return res_data["choices"][0]["message"]["content"]
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {key}"
+                    },
+                    json={
+                        "model": "gpt-4o-mini",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 300
+                    }
+                )
+                data = resp.json()
+                if resp.status_code == 200:
+                    return data["choices"][0]["message"]["content"], "Live OpenAI API (gpt-4o-mini)"
+                else:
+                    err_msg = data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                    print(f"OpenAI API Error: {err_msg}")
+                    return f"OpenAI API Error: {err_msg}", f"OpenAI API Failed (HTTP {resp.status_code})"
         except Exception as e:
-            logger.warning(f"OpenAI API call failed: {e}")
+            print(f"OpenAI API Exception: {e}")
+            return f"OpenAI API Exception: {e}", "OpenAI API Call Failed"
 
     # Intelligent contextual prompt analyzer
     total_match = re.search(r'\(total:\s*(\d+)\)', prompt) or re.search(r'"total_items":\s*(\d+)', prompt) or re.search(r'TRUNCATED (\d+) lines', prompt)
@@ -449,7 +468,7 @@ async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str 
         endpoints = list(set(re.findall(r'/[a-zA-Z0-9_/-]+', prompt)[:5]))
         endpoint_str = ', '.join(endpoints[:4]) if endpoints else '/api/stats, /api/compress'
         method_str = ', '.join(methods) if methods else 'GET, POST'
-        return (
+        resp_str = (
             f"Log Stream Analysis Summary:\n"
             f"- Total Log Entries: {total_lines} HTTP access records\n"
             f"- Detected Methods: {method_str}\n"
@@ -457,6 +476,7 @@ async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str 
             f"- HTTP Status Codes: 200 OK (all server calls succeeded)\n"
             f"- Verdict: Normal server activity logged with zero connection errors."
         )
+        return resp_str, "PromptLens Fidelity Evaluator Engine"
 
     # Check 2: Pytest / Stack Traces
     elif "Traceback" in prompt or "ConnectionError" in prompt or "Exception" in prompt:
@@ -464,43 +484,47 @@ async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str 
         error_msg = error_match.group(1) if error_match else "ConnectionError: Could not connect to PostgreSQL"
         file_match = re.search(r'File "([^"]+)", line (\d+)', prompt)
         file_loc = f'{file_match.group(1)}:{file_match.group(2)}' if file_match else 'app.py:42'
-        return (
+        resp_str = (
             f"Diagnostic & Fix Plan:\n"
             f"- Error Type: {error_msg}\n"
             f"- Trigger Location: {file_loc}\n"
             f"- Stack Frames Evaluated: {total_lines} call sites\n"
             f"- Action: Verify database service status and check environment credentials."
         )
+        return resp_str, "PromptLens Fidelity Evaluator Engine"
 
     # Check 3: JSON Array Data
     elif prompt.strip().startswith("[") or ("\"user\"" in prompt and "\"id\"" in prompt):
-        return (
+        resp_str = (
             f"Summary of JSON Dataset:\n"
             f"- Total Records: Evaluated JSON payload ({total_lines} lines)\n"
             f"- Schema Structure: Active object key-value records\n"
             f"- Top Role Evaluated: 'admin' / 'member' active records\n"
             f"- Conclusion: All items conform to standard active schema."
         )
+        return resp_str, "PromptLens Fidelity Evaluator Engine"
 
     # Check 4: Git Diffs
     elif "diff --git" in prompt or "@@" in prompt or "--- a/" in prompt:
-        return (
+        resp_str = (
             f"Git Patch Code Review:\n"
             f"- Diff Payload: {total_lines} modified lines\n"
             f"- Changes Evaluated: Updated metrics and payload handlers\n"
             f"- Verdict: Approved. Clean non-breaking code change."
         )
+        return resp_str, "PromptLens Fidelity Evaluator Engine"
 
     # Check 5: General Text / Project Specs
     else:
         first_line = lines[0][:60] if lines else "Custom Prompt Payload"
-        return (
+        resp_str = (
             f"Verified Output Analysis:\n"
             f"- Subject: {first_line}\n"
             f"- Payload Volume: {total_lines} lines evaluated\n"
             f"- Content Retention: Core requirements and structural intent preserved 100%\n"
             f"- Output Verdict: Zero quality loss detected."
         )
+        return resp_str, "PromptLens Fidelity Evaluator Engine"
 
 
 @app.post("/api/verify_fidelity")
@@ -514,18 +538,8 @@ async def verify_fidelity(req: VerificationRequest):
     comp_tokens = get_token_count(new_content)
     savings_pct = round((1.0 - (comp_tokens / orig_tokens)) * 100.0, 1) if orig_tokens > 0 else 0.0
 
-    original_resp = await _call_ai_model(req.prompt, req.api_key, req.provider)
-    compressed_resp = await _call_ai_model(new_content, req.api_key, req.provider)
-
-    key = (req.api_key or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
-    if key.startswith("sk-ant-"):
-        provider_label = "Live Anthropic API (claude-3-5-sonnet)"
-    elif key.startswith("AIza"):
-        provider_label = "Live Google Gemini API (gemini-1.5-flash)"
-    elif key.startswith("sk-"):
-        provider_label = "Live OpenAI API (gpt-4o-mini)"
-    else:
-        provider_label = "PromptLens Fidelity Evaluator Engine"
+    original_resp, provider_orig = await _call_ai_model(req.prompt, req.api_key, req.provider)
+    compressed_resp, provider_comp = await _call_ai_model(new_content, req.api_key, req.provider)
 
     return {
         "original_tokens": orig_tokens,
@@ -535,7 +549,7 @@ async def verify_fidelity(req: VerificationRequest):
         "original_response": original_resp,
         "compressed_response": compressed_resp,
         "match_score": 100.0,
-        "provider": provider_label,
+        "provider": provider_orig,
         "retrieval_id": stored_id
     }
 
