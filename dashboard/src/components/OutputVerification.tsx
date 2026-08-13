@@ -193,33 +193,33 @@ export const OutputVerification: React.FC = () => {
       </div>
 
       {/* Fidelity Match Banner Card */}
-      <div className="bg-neutral-900/90 border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
-        <div className="flex items-center space-x-3">
-          <div className="min-w-[52px] h-10 px-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-bold text-xs font-mono shrink-0 shadow-inner">
+      <div className="bg-neutral-900/90 border border-emerald-500/30 rounded-2xl p-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4 shadow-xl">
+        <div className="flex items-center space-x-3.5 min-w-0">
+          <div className="min-w-[56px] h-11 px-2.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-300 font-bold text-xs font-mono shrink-0 shadow-inner">
             100%
           </div>
-          <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-1.5">
-              <span>Output Match Verdict:</span>
-              <span className="text-emerald-400">
-                {liveFidelityResult ? `Live AI Response Verified (${liveFidelityResult.provider})` : currentPreset.statusText}
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <span className="text-sm font-bold text-white">Output Match Verdict:</span>
+              <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                {liveFidelityResult ? `Live AI Verified (${liveFidelityResult.provider})` : currentPreset.statusText}
               </span>
-            </h3>
-            <p className="text-xs text-neutral-400 mt-0.5">
+            </div>
+            <p className="text-xs text-neutral-400 mt-1">
               {liveFidelityResult ? 'Executed live AI comparison call between original raw prompt and compressed payload.' : currentPreset.description}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3 text-xs font-mono bg-neutral-950 p-2.5 rounded-xl border border-neutral-800">
-          <div>
-            Original: <span className="text-white font-bold">{activeOriginalTokens.toLocaleString()}</span> tokens
+        <div className="flex flex-wrap items-center gap-3 text-xs font-mono bg-neutral-950 px-4 py-2.5 rounded-xl border border-neutral-800 shrink-0">
+          <div className="whitespace-nowrap">
+            <span className="text-neutral-400">Original:</span> <span className="text-white font-bold">{activeOriginalTokens.toLocaleString()}</span> <span className="text-neutral-500">tokens</span>
           </div>
-          <ArrowRight className="w-3.5 h-3.5 text-neutral-500" />
-          <div>
-            Compressed: <span className="text-emerald-400 font-bold">{activeCompressedTokens.toLocaleString()}</span> tokens
+          <ArrowRight className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+          <div className="whitespace-nowrap">
+            <span className="text-neutral-400">Compressed:</span> <span className="text-emerald-400 font-bold">{activeCompressedTokens.toLocaleString()}</span> <span className="text-neutral-500">tokens</span>
           </div>
-          <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold">
+          <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap">
             {activeSavingsPct.toFixed(1)}% Saved
           </span>
         </div>
