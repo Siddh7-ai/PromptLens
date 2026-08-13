@@ -1,9 +1,21 @@
 {
-  "total_requests": 172,
-  "total_baseline_tokens": 980695,
-  "total_compressed_tokens": 436636,
+  "total_requests": 173,
+  "total_baseline_tokens": 981507,
+  "total_compressed_tokens": 436995,
   "total_retrievals": 15,
   "request_logs": [
+    {
+      "id": 21,
+      "timestamp": "14:20:43",
+      "path": "/api/compress",
+      "method": "POST",
+      "baseline_tokens": 812,
+      "compressed_tokens": 359,
+      "savings_pct": 55.8,
+      "retrieval_id": "2a74af55e563",
+      "discipline_mode": "off",
+      "output_tokens": 0
+    },
     {
       "id": 21,
       "timestamp": "14:13:06",
@@ -231,23 +243,11 @@
       "retrieval_id": "92c83f8b5a96",
       "discipline_mode": "full",
       "output_tokens": 2800
-    },
-    {
-      "id": 153,
-      "timestamp": "23:23:50",
-      "path": "/v1/chat/completions",
-      "method": "POST",
-      "baseline_tokens": 18450,
-      "compressed_tokens": 5930,
-      "savings_pct": 67.9,
-      "retrieval_id": "a401f92e88b2",
-      "discipline_mode": "lite",
-      "output_tokens": 1900
     }
   ],
   "discipline_stats": {
     "off": {
-      "requests": 58,
+      "requests": 59,
       "output_tokens": 12600
     },
     "lite": {

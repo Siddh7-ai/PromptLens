@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { RequestLog } from '../types';
+import { RequestLog, MetricsSummary } from '../types';
 import { Zap, DollarSign, Layers, BarChart3, PieChart, Sparkles, Filter } from 'lucide-react';
 
 interface SavingsChartProps {
   requests: RequestLog[];
+  metrics?: MetricsSummary;
 }
 
-export const SavingsChart: React.FC<SavingsChartProps> = ({ requests }) => {
+export const SavingsChart: React.FC<SavingsChartProps> = ({ requests, metrics }) => {
   const [viewMode, setViewMode] = useState<'comparison' | 'donut' | 'pipeline'>('donut');
 
   // Fallback benchmark data if live request history is empty
@@ -21,11 +22,12 @@ export const SavingsChart: React.FC<SavingsChartProps> = ({ requests }) => {
           { id: 5, path: 'npm_build.log', baseline_tokens: 376, compressed_tokens: 376, savings_pct: 0.0, retrieval_id: '-' },
         ];
 
-  const totalBaseline = rawChartData.reduce((acc, d) => acc + d.baseline_tokens, 0);
-  const totalCompressed = rawChartData.reduce((acc, d) => acc + d.compressed_tokens, 0);
-  const totalSaved = Math.max(0, totalBaseline - totalCompressed);
-  const avgSavingsPct = totalBaseline > 0 ? (totalSaved / totalBaseline) * 100 : 0;
-  const usdSaved = (totalSaved / 1_000_000) * 3.0;
+  const totalBaseline = metrics && metrics.total_baseline_tokens > 0 ? metrics.total_baseline_tokens : rawChartData.reduce((acc, d) => acc + d.baseline_tokens, 0);
+  const totalCompressed = metrics && metrics.total_compressed_tokens > 0 ? metrics.total_compressed_tokens : rawChartData.reduce((acc, d) => acc + d.compressed_tokens, 0);
+  const totalSaved = metrics && metrics.total_tokens_saved > 0 ? metrics.total_tokens_saved : Math.max(0, totalBaseline - totalCompressed);
+  const avgSavingsPct = metrics && metrics.overall_savings_pct > 0 ? metrics.overall_savings_pct : (totalBaseline > 0 ? (totalSaved / totalBaseline) * 100 : 0);
+  const usdSaved = metrics && metrics.estimated_usd_saved > 0 ? metrics.estimated_usd_saved : (totalSaved / 1_000_000) * 3.0;
+  const totalRequestsCount = metrics && metrics.total_requests > 0 ? metrics.total_requests : rawChartData.length;
 
   const maxTokens = Math.max(...rawChartData.map((d) => d.baseline_tokens), 1000);
 
@@ -106,7 +108,7 @@ export const SavingsChart: React.FC<SavingsChartProps> = ({ requests }) => {
         <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 flex items-center justify-between transition hover:border-purple-500/30">
           <div>
             <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider">Payloads Evaluated</p>
-            <p className="text-2xl font-black text-white mt-1">{rawChartData.length}</p>
+            <p className="text-2xl font-black text-white mt-1">{totalRequestsCount}</p>
           </div>
           <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
             <Layers className="w-5 h-5" />
