@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { RequestLog } from '../types';
+import { RequestLog, MetricsSummary } from '../types';
 import { Zap, DollarSign, Layers, BarChart3, PieChart, Sparkles, Filter } from 'lucide-react';
 
 interface SavingsChartProps {
   requests: RequestLog[];
+  metrics?: MetricsSummary;
 }
 
-export const SavingsChart: React.FC<SavingsChartProps> = ({ requests }) => {
+export const SavingsChart: React.FC<SavingsChartProps> = ({ requests, metrics }) => {
   const [viewMode, setViewMode] = useState<'comparison' | 'donut' | 'pipeline'>('donut');
 
-  // Use full request history for accumulating total calculations so numbers increase properly
+  // Use full request history for fallback calculations
   const allRequestsData =
     requests.length > 0
       ? requests
@@ -24,12 +25,12 @@ export const SavingsChart: React.FC<SavingsChartProps> = ({ requests }) => {
   // Slice top 6 items for vertical pillar bar visualization
   const pillarBarsData = allRequestsData.slice(0, 6);
 
-  const totalBaseline = allRequestsData.reduce((acc, d) => acc + d.baseline_tokens, 0);
-  const totalCompressed = allRequestsData.reduce((acc, d) => acc + d.compressed_tokens, 0);
-  const totalSaved = Math.max(0, totalBaseline - totalCompressed);
-  const avgSavingsPct = totalBaseline > 0 ? (totalSaved / totalBaseline) * 100 : 0;
-  const usdSaved = (totalSaved / 1_000_000) * 3.0;
-  const totalRequestsCount = allRequestsData.length;
+  const totalBaseline = metrics && metrics.total_baseline_tokens > 0 ? metrics.total_baseline_tokens : allRequestsData.reduce((acc, d) => acc + d.baseline_tokens, 0);
+  const totalCompressed = metrics && metrics.total_compressed_tokens > 0 ? metrics.total_compressed_tokens : allRequestsData.reduce((acc, d) => acc + d.compressed_tokens, 0);
+  const totalSaved = metrics && metrics.total_tokens_saved > 0 ? metrics.total_tokens_saved : Math.max(0, totalBaseline - totalCompressed);
+  const avgSavingsPct = metrics && metrics.overall_savings_pct > 0 ? metrics.overall_savings_pct : (totalBaseline > 0 ? (totalSaved / totalBaseline) * 100 : 0);
+  const usdSaved = metrics && metrics.estimated_usd_saved > 0 ? metrics.estimated_usd_saved : (totalSaved / 1_000_000) * 3.0;
+  const totalRequestsCount = metrics && metrics.total_requests > 0 ? metrics.total_requests : allRequestsData.length;
 
   const maxTokens = Math.max(...pillarBarsData.map((d) => d.baseline_tokens), 1000);
 
