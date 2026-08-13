@@ -226,7 +226,7 @@ export const OutputVerification: React.FC = () => {
       {/* Side-by-Side Output Comparison Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
         {/* Left Column: Original Uncompressed Prompt & Response */}
-        <div className="space-y-4 bg-neutral-950 border border-neutral-850 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+        <div className="bg-neutral-950 border border-neutral-850 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-850 pb-3 h-8">
               <div className="flex items-center space-x-2">
@@ -269,7 +269,7 @@ export const OutputVerification: React.FC = () => {
         </div>
 
         {/* Right Column: PromptLens Compressed Payload & Response */}
-        <div className="space-y-4 bg-neutral-950 border border-emerald-500/30 rounded-2xl p-5 shadow-xl relative flex flex-col justify-between">
+        <div className="bg-neutral-950 border border-emerald-500/30 rounded-2xl p-5 shadow-xl relative flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
 
           <div className="space-y-4 relative z-10">
