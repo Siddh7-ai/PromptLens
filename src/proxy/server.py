@@ -369,8 +369,49 @@ class VerificationRequest(BaseModel):
 
 
 async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str = "auto") -> str:
-    key = api_key or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
-    if key and (key.startswith("sk-") or "openai" in provider.lower()):
+    key = (api_key or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    
+    # 1. Anthropic Claude API (starts with sk-ant-)
+    if key.startswith("sk-ant-") or "claude" in provider.lower() or "anthropic" in provider.lower():
+        try:
+            import urllib.request
+            import json
+            headers = {
+                "Content-Type": "application/json",
+                "x-api-key": key,
+                "anthropic-version": "2023-06-01"
+            }
+            body = json.dumps({
+                "model": "claude-3-5-sonnet-20241022",
+                "max_tokens": 300,
+                "messages": [{"role": "user", "content": prompt}]
+            }).encode('utf-8')
+            req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=body, headers=headers)
+            with urllib.request.urlopen(req, timeout=12) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                return res_data["content"][0]["text"]
+        except Exception as e:
+            logger.warning(f"Anthropic API call failed: {e}")
+
+    # 2. Google Gemini API (starts with AIza)
+    elif key.startswith("AIza") or "gemini" in provider.lower():
+        try:
+            import urllib.request
+            import json
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
+            headers = {"Content-Type": "application/json"}
+            body = json.dumps({
+                "contents": [{"parts": [{"text": prompt}]}]
+            }).encode('utf-8')
+            req = urllib.request.Request(url, data=body, headers=headers)
+            with urllib.request.urlopen(req, timeout=12) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                return res_data["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as e:
+            logger.warning(f"Gemini API call failed: {e}")
+
+    # 3. OpenAI API (starts with sk-)
+    elif key.startswith("sk-") or "openai" in provider.lower():
         try:
             import urllib.request
             import json
@@ -384,7 +425,7 @@ async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str 
                 "max_tokens": 300
             }).encode('utf-8')
             req = urllib.request.Request("https://api.openai.com/v1/chat/completions", data=body, headers=headers)
-            with urllib.request.urlopen(req, timeout=10) as response:
+            with urllib.request.urlopen(req, timeout=12) as response:
                 res_data = json.loads(response.read().decode('utf-8'))
                 return res_data["choices"][0]["message"]["content"]
         except Exception as e:
@@ -476,8 +517,15 @@ async def verify_fidelity(req: VerificationRequest):
     original_resp = await _call_ai_model(req.prompt, req.api_key, req.provider)
     compressed_resp = await _call_ai_model(new_content, req.api_key, req.provider)
 
-    has_key = bool(req.api_key or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY"))
-    provider_label = "Live OpenAI API (gpt-4o-mini)" if has_key else "PromptLens Fidelity Evaluator Engine"
+    key = (req.api_key or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    if key.startswith("sk-ant-"):
+        provider_label = "Live Anthropic API (claude-3-5-sonnet)"
+    elif key.startswith("AIza"):
+        provider_label = "Live Google Gemini API (gemini-1.5-flash)"
+    elif key.startswith("sk-"):
+        provider_label = "Live OpenAI API (gpt-4o-mini)"
+    else:
+        provider_label = "PromptLens Fidelity Evaluator Engine"
 
     return {
         "original_tokens": orig_tokens,
