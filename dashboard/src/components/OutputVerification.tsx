@@ -84,6 +84,7 @@ export const OutputVerification: React.FC = () => {
     original_tokens: number;
     compressed_tokens: number;
     savings_pct: number;
+    compressed_text?: string;
     original_response: string;
     compressed_response: string;
     provider: string;
@@ -125,6 +126,7 @@ export const OutputVerification: React.FC = () => {
   };
 
   const activeOriginalSnippet = liveFidelityResult ? customPrompt : currentPreset.originalPromptSnippet;
+  const activeCompressedSnippet = liveFidelityResult && liveFidelityResult.compressed_text ? liveFidelityResult.compressed_text : currentPreset.compressedPromptSnippet;
   const activeOriginalTokens = liveFidelityResult ? liveFidelityResult.original_tokens : currentPreset.originalTokens;
   const activeCompressedTokens = liveFidelityResult ? liveFidelityResult.compressed_tokens : currentPreset.compressedTokens;
   const activeSavingsPct = liveFidelityResult ? liveFidelityResult.savings_pct : currentPreset.savingsPct;
@@ -279,7 +281,7 @@ export const OutputVerification: React.FC = () => {
                 <h3 className="text-sm font-bold text-emerald-300">PromptLens Compressed Payload</h3>
               </div>
               <button
-                onClick={() => handleCopy(currentPreset.compressedPromptSnippet, false)}
+                onClick={() => handleCopy(activeCompressedSnippet, false)}
                 className="text-xs text-neutral-400 hover:text-white flex items-center space-x-1"
               >
                 {copiedCompressed ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
@@ -295,7 +297,7 @@ export const OutputVerification: React.FC = () => {
                 <span className="text-[9px] font-mono text-emerald-400 font-bold">-{activeSavingsPct.toFixed(1)}% Tokens</span>
               </div>
               <pre className="w-full bg-neutral-900/90 text-emerald-200 border border-emerald-500/20 rounded-xl p-3.5 text-xs font-mono whitespace-pre-wrap overflow-x-auto h-56 leading-relaxed">
-                {currentPreset.compressedPromptSnippet}
+                {activeCompressedSnippet}
               </pre>
             </div>
 

@@ -419,6 +419,7 @@ async def verify_fidelity(req: VerificationRequest):
         "original_tokens": orig_tokens,
         "compressed_tokens": comp_tokens,
         "savings_pct": savings_pct,
+        "compressed_text": new_content,
         "original_response": original_resp,
         "compressed_response": compressed_resp,
         "match_score": 100.0,
