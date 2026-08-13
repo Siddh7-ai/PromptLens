@@ -200,7 +200,7 @@ export const App: React.FC = () => {
 
           {currentView === 'analytics' && (
             <div className="space-y-6">
-              <SavingsChart requests={metrics.recent_requests} metrics={metrics} />
+              <SavingsChart requests={metrics.recent_requests} />
               <DisciplineStats metrics={metrics} />
             </div>
           )}

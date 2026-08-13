@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
-import { RequestLog, MetricsSummary } from '../types';
+import { RequestLog } from '../types';
 import { Zap, DollarSign, Layers, BarChart3, PieChart, Sparkles, Filter } from 'lucide-react';
 
 interface SavingsChartProps {
   requests: RequestLog[];
-  metrics?: MetricsSummary;
 }
 
-export const SavingsChart: React.FC<SavingsChartProps> = ({ requests, metrics }) => {
+export const SavingsChart: React.FC<SavingsChartProps> = ({ requests }) => {
   const [viewMode, setViewMode] = useState<'comparison' | 'donut' | 'pipeline'>('donut');
 
-  // Fallback benchmark data if live request history is empty
-  const rawChartData =
+  // Use full request history for accumulating total calculations so numbers increase properly
+  const allRequestsData =
     requests.length > 0
-      ? requests.slice(0, 6)
+      ? requests
       : [
           { id: 1, path: 'large_json_array.json', baseline_tokens: 118154, compressed_tokens: 991, savings_pct: 99.2, retrieval_id: '-' },
           { id: 2, path: 'pytest_failure.log', baseline_tokens: 1061, compressed_tokens: 829, savings_pct: 21.9, retrieval_id: '-' },
@@ -22,14 +21,17 @@ export const SavingsChart: React.FC<SavingsChartProps> = ({ requests, metrics })
           { id: 5, path: 'npm_build.log', baseline_tokens: 376, compressed_tokens: 376, savings_pct: 0.0, retrieval_id: '-' },
         ];
 
-  const totalBaseline = metrics && metrics.total_baseline_tokens > 0 ? metrics.total_baseline_tokens : rawChartData.reduce((acc, d) => acc + d.baseline_tokens, 0);
-  const totalCompressed = metrics && metrics.total_compressed_tokens > 0 ? metrics.total_compressed_tokens : rawChartData.reduce((acc, d) => acc + d.compressed_tokens, 0);
-  const totalSaved = metrics && metrics.total_tokens_saved > 0 ? metrics.total_tokens_saved : Math.max(0, totalBaseline - totalCompressed);
-  const avgSavingsPct = metrics && metrics.overall_savings_pct > 0 ? metrics.overall_savings_pct : (totalBaseline > 0 ? (totalSaved / totalBaseline) * 100 : 0);
-  const usdSaved = metrics && metrics.estimated_usd_saved > 0 ? metrics.estimated_usd_saved : (totalSaved / 1_000_000) * 3.0;
-  const totalRequestsCount = metrics && metrics.total_requests > 0 ? metrics.total_requests : rawChartData.length;
+  // Slice top 6 items for vertical pillar bar visualization
+  const pillarBarsData = allRequestsData.slice(0, 6);
 
-  const maxTokens = Math.max(...rawChartData.map((d) => d.baseline_tokens), 1000);
+  const totalBaseline = allRequestsData.reduce((acc, d) => acc + d.baseline_tokens, 0);
+  const totalCompressed = allRequestsData.reduce((acc, d) => acc + d.compressed_tokens, 0);
+  const totalSaved = Math.max(0, totalBaseline - totalCompressed);
+  const avgSavingsPct = totalBaseline > 0 ? (totalSaved / totalBaseline) * 100 : 0;
+  const usdSaved = (totalSaved / 1_000_000) * 3.0;
+  const totalRequestsCount = allRequestsData.length;
+
+  const maxTokens = Math.max(...pillarBarsData.map((d) => d.baseline_tokens), 1000);
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -299,7 +301,7 @@ export const SavingsChart: React.FC<SavingsChartProps> = ({ requests, metrics })
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 items-end pt-4 min-h-[220px]">
-              {rawChartData.map((item, idx) => {
+              {pillarBarsData.map((item, idx) => {
                 const baselineH = Math.max(20, (item.baseline_tokens / maxTokens) * 160);
                 const compressedH = Math.max(8, (item.compressed_tokens / maxTokens) * 160);
 
