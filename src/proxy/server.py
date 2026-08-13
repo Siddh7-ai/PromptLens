@@ -391,8 +391,16 @@ async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str 
             logger.warning(f"OpenAI API call failed: {e}")
 
     # Intelligent contextual prompt analyzer
-    lines = [l.strip() for l in prompt.strip().splitlines() if l.strip()]
-    total_lines = len(lines)
+    total_match = re.search(r'\(total:\s*(\d+)\)', prompt) or re.search(r'"total_items":\s*(\d+)', prompt) or re.search(r'TRUNCATED (\d+) lines', prompt)
+    if total_match:
+        if '(total:' in total_match.group(0) or '"total_items":' in total_match.group(0):
+            total_lines = int(total_match.group(1))
+        else:
+            lines = [l.strip() for l in prompt.strip().splitlines() if l.strip()]
+            total_lines = len(lines) + int(total_match.group(1)) - 1
+    else:
+        lines = [l.strip() for l in prompt.strip().splitlines() if l.strip()]
+        total_lines = len(lines)
     
     # Check 1: Server / HTTP Access Logs
     if any(k in prompt for k in ["INFO:", "GET /", "POST /", "HTTP/1.1", "200 OK", "304 Not Modified"]):
