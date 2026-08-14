@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import tiktoken
+from src.store.retrieval_store import RetrievalStore, get_global_store
 
 ENCODING_NAME = "cl100k_base"
 
@@ -51,13 +52,19 @@ def _generate_array_skimming_summary(items: list) -> dict:
     all_keys = set()
     key_values: dict[str, list] = {}
 
-    for item in sampled_items:
-        if isinstance(item, dict):
-            for k, v in item.items():
-                all_keys.add(k)
+    def extract_keys_and_values(obj: dict):
+        for k, v in obj.items():
+            all_keys.add(k)
+            if isinstance(v, dict):
+                extract_keys_and_values(v)
+            else:
                 if k not in key_values:
                     key_values[k] = []
                 key_values[k].append(v)
+
+    for item in sampled_items:
+        if isinstance(item, dict):
+            extract_keys_and_values(item)
 
     numeric_ranges = {}
     distinct_enums = {}
@@ -89,7 +96,7 @@ def _generate_array_skimming_summary(items: list) -> dict:
 def _compress_node(
     node: Any,
     retrieval_id: str,
-    max_array_items: int = 3,
+    max_array_items: int = 1,
     depth: int = 0,
     max_depth: int = 15,
     store: Any = None,
@@ -124,7 +131,6 @@ def _compress_node(
                 "total_items": len(node),
                 "retrieval_id": retrieval_id,
                 "_promptlens_summary": skimming,
-                "summary": skimming,
                 "notice": f"Truncated {omitted} items. Use retrieve_original('{retrieval_id}') to view full list.",
             }
             compressed_list.append(marker)
@@ -144,12 +150,9 @@ def _compress_node(
         return node
 
 
-from src.store.retrieval_store import RetrievalStore, get_global_store
-
-
 def compress_json(
     json_str: str,
-    max_array_items: int = 3,
+    max_array_items: int = 1,
     min_token_threshold: int = 50,
     store: Any = None,
     max_depth: int = 15,

@@ -6,7 +6,7 @@ export const SettingsPanel: React.FC = () => {
   const [settings, setSettings] = useState<CompressionSettings>({
     head_lines: 10,
     tail_lines: 10,
-    max_json_array: 5,
+    max_json_array: 1,
     min_tokens_threshold: 100,
   });
   const [saving, setSaving] = useState<boolean>(false);
@@ -51,7 +51,7 @@ export const SettingsPanel: React.FC = () => {
     const defaults: CompressionSettings = {
       head_lines: 10,
       tail_lines: 10,
-      max_json_array: 50,
+      max_json_array: 1,
       min_tokens_threshold: 100,
       discipline_mode: 'off',
     };
@@ -73,28 +73,28 @@ export const SettingsPanel: React.FC = () => {
     off: {
       head_lines: 10,
       tail_lines: 10,
-      max_json_array: 50,
+      max_json_array: 1,
       min_tokens_threshold: 100,
       discipline_mode: 'off',
     },
     lite: {
       head_lines: 8,
       tail_lines: 8,
-      max_json_array: 30,
+      max_json_array: 1,
       min_tokens_threshold: 80,
       discipline_mode: 'lite',
     },
     full: {
       head_lines: 5,
       tail_lines: 5,
-      max_json_array: 20,
+      max_json_array: 1,
       min_tokens_threshold: 50,
       discipline_mode: 'full',
     },
     ultra: {
       head_lines: 3,
       tail_lines: 3,
-      max_json_array: 10,
+      max_json_array: 1,
       min_tokens_threshold: 30,
       discipline_mode: 'ultra',
     },
@@ -180,9 +180,9 @@ export const SettingsPanel: React.FC = () => {
             </div>
             <input
               type="range"
-              min="5"
-              max="200"
-              step="5"
+              min="1"
+              max="100"
+              step="1"
               value={settings.max_json_array}
               onChange={(e) => setSettings({ ...settings, max_json_array: parseInt(e.target.value) })}
               className="w-full accent-white cursor-pointer"

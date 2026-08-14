@@ -104,12 +104,17 @@ const DEFAULT_GITDIFF_PROMPT =
 const SAMPLE_PRESETS: Record<string, string> = {
   pytest: DEFAULT_PYTEST_PROMPT,
   json: JSON.stringify(
-    Array.from({ length: 15 }, (_, i) => ({
+    Array.from({ length: 5000 }, (_, i) => ({
       id: i + 1,
-      user: `user_${i + 1}`,
-      role: i % 2 === 0 ? 'admin' : 'member',
+      user: `user_${i + 1}_admin`,
+      email: `user_${i + 1}@company.io`,
+      role: i === 0 ? 'admin' : 'member',
       status: 'active',
       created_at: '2026-01-01T00:00:00Z',
+      metrics: {
+        score: 85 + (i % 15),
+        requests: (i + 1) * 12,
+      },
     })),
     null,
     2

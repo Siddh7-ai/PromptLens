@@ -1,12 +1,21 @@
 import os
 import json
 import re
+import socket
+import urllib.request
+import urllib.error
 from typing import Any
 import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+# Force Python socket to use IPv4 only on Windows to bypass dual-stack IPv6 DNS resolution timeouts
+_orig_getaddrinfo = socket.getaddrinfo
+def _getaddrinfo_ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
+    return _orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+socket.getaddrinfo = _getaddrinfo_ipv4_only
 
 
 from src.compress.json_compressor import compress_json
@@ -107,7 +116,7 @@ def _compress_tool_content(content: str) -> tuple[str, str | None, float]:
     """
     head_lines = COMPRESSION_SETTINGS.get("head_lines", 10)
     tail_lines = COMPRESSION_SETTINGS.get("tail_lines", 10)
-    max_json_array = COMPRESSION_SETTINGS.get("max_json_array", 50)
+    max_json_array = COMPRESSION_SETTINGS.get("max_json_array", 1)
     min_tokens_threshold = COMPRESSION_SETTINGS.get("min_tokens_threshold", 100)
 
     try:
@@ -118,9 +127,7 @@ def _compress_tool_content(content: str) -> tuple[str, str | None, float]:
                 result = compress_json(content, max_array_items=max_json_array)
                 if result.is_compressed:
                     stored_id = retrieval_store.save(content)
-                    savings_pct = f"{(result.compression_ratio * 100):.1f}%"
-                    notice = f"\n\n[PromptLens: Content compressed ({savings_pct} saved). Original ID: {stored_id}. Use retrieve_original(id=\"{stored_id}\")]"
-                    candidate_str = result.compressed_str + notice
+                    candidate_str = result.compressed_str
                     if get_token_count(candidate_str) < result.original_tokens:
                         net_ratio = round(1.0 - (get_token_count(candidate_str) / result.original_tokens), 4)
                         return candidate_str, stored_id, net_ratio
@@ -262,7 +269,7 @@ async def health_check():
 COMPRESSION_SETTINGS = {
     "head_lines": 10,
     "tail_lines": 10,
-    "max_json_array": 5,
+    "max_json_array": 1,
     "min_tokens_threshold": 100,
     "discipline_mode": os.getenv("AGENT_DISCIPLINE_MODE", "off")
 }
@@ -368,13 +375,155 @@ class VerificationRequest(BaseModel):
     provider: str = "auto"
 
 
+class TestKeyRequest(BaseModel):
+    api_key: str
+
+
+def _call_gemini_api(prompt: str, key: str) -> tuple[str, str, int]:
+    """
+    Direct native urllib request to Google Gemini API with dynamic model discovery.
+    """
+    models = []
+    # 1. Discover active models via Google AI Studio API
+    url_models = f"https://generativelanguage.googleapis.com/v1beta/models?key={key}"
+    req_m = urllib.request.Request(url_models)
+    try:
+        with urllib.request.urlopen(req_m, timeout=10) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            for m in data.get("models", []):
+                methods = m.get("supportedGenerationMethods", [])
+                name = m.get("name", "").replace("models/", "")
+                # Exclude TTS (audio), embedding, and imagen models
+                if any(skip in name.lower() for skip in ["tts", "embedding", "imagen", "audio"]):
+                    continue
+                if "generateContent" in methods and name:
+                    models.append(name)
+    except urllib.error.HTTPError as e:
+        err_body = e.read().decode('utf-8', errors='ignore')
+        try:
+            err_json = json.loads(err_body)
+            msg = err_json.get("error", {}).get("message", f"HTTP {e.code}")
+        except Exception:
+            msg = f"HTTP {e.code}: {e.reason}"
+        return f"Gemini API Error ({e.code}): {msg}", "Google Gemini", e.code
+    except Exception:
+        pass
+
+    # Priority fallback list if discovery yielded no candidates
+    priority = ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro", "gemini-pro"]
+    if models:
+        candidate_models = [m for m in priority if m in models] + [m for m in models if m not in priority]
+    else:
+        candidate_models = priority
+
+    last_err = "No supported text model found"
+    last_code = 400
+
+    for model in candidate_models:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+        headers = {"Content-Type": "application/json"}
+        body = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode('utf-8')
+        req = urllib.request.Request(url, data=body, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                res_data = json.loads(resp.read().decode('utf-8'))
+                text = res_data["candidates"][0]["content"]["parts"][0]["text"]
+                return text, f"Live Google Gemini API ({model})", 200
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode('utf-8', errors='ignore')
+            last_code = e.code
+            try:
+                err_json = json.loads(err_body)
+                msg = err_json.get("error", {}).get("message", f"HTTP {e.code}")
+            except Exception:
+                msg = f"HTTP {e.code}: {e.reason}"
+            
+            if e.code == 404:
+                last_err = msg
+                continue
+            return f"Gemini API Error ({e.code}): {msg}", f"Google Gemini ({model})", e.code
+        except Exception as e:
+            return f"Connection Error: {e}", "Google Gemini Connection Error", 500
+
+    return f"Gemini API Error ({last_code}): {last_err}", "Google Gemini", last_code
+
+
+@app.post("/api/test_key")
+async def test_key(req: TestKeyRequest):
+    """
+    Tests an API key live against Gemini, OpenAI, or Anthropic.
+    """
+    key = req.api_key.strip()
+    if not key:
+        return {"status": "error", "message": "API key is empty"}
+
+    # 1. Anthropic Claude API (starts with sk-ant-)
+    if key.startswith("sk-ant-"):
+        try:
+            async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
+                resp = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-api-key": key,
+                        "anthropic-version": "2023-06-01"
+                    },
+                    json={
+                        "model": "claude-3-5-sonnet-20241022",
+                        "max_tokens": 10,
+                        "messages": [{"role": "user", "content": "Ping test"}]
+                    }
+                )
+                data = resp.json()
+                if resp.status_code == 200:
+                    return {"status": "success", "provider": "Anthropic Claude (claude-3-5-sonnet)", "message": "Claude API Key Verified & Active!"}
+                else:
+                    err_msg = data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                    return {"status": "error", "provider": "Anthropic Claude", "message": f"Claude API Error ({resp.status_code}): {err_msg}"}
+        except Exception as e:
+            return {"status": "error", "provider": "Anthropic Claude", "message": f"Connection Error: {type(e).__name__} ({e})"}
+
+    # 2. OpenAI API (starts with sk-)
+    elif key.startswith("sk-"):
+        try:
+            async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
+                resp = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {key}"
+                    },
+                    json={
+                        "model": "gpt-4o-mini",
+                        "messages": [{"role": "user", "content": "Ping test"}],
+                        "max_tokens": 10
+                    }
+                )
+                data = resp.json()
+                if resp.status_code == 200:
+                    return {"status": "success", "provider": "OpenAI (gpt-4o-mini)", "message": "OpenAI API Key Verified & Active!"}
+                else:
+                    err_msg = data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                    return {"status": "error", "provider": "OpenAI", "message": f"OpenAI API Error ({resp.status_code}): {err_msg}"}
+        except Exception as e:
+            return {"status": "error", "provider": "OpenAI", "message": f"Connection Error: {type(e).__name__} ({e})"}
+
+    # 3. Google Gemini API (starts with AQ., AIza, or non-sk prefix)
+    else:
+        text, provider, status_code = _call_gemini_api("Ping test", key)
+        if status_code == 200:
+            return {"status": "success", "provider": provider, "message": f"Gemini API Key Verified & Active ({provider})!"}
+        else:
+            return {"status": "error", "provider": "Google Gemini", "message": text}
+
+
 async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str = "auto") -> tuple[str, str]:
     key = (api_key or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
     
     # 1. Anthropic Claude API (starts with sk-ant-)
     if key.startswith("sk-ant-") or "claude" in provider.lower() or "anthropic" in provider.lower():
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
                 resp = await client.post(
                     "https://api.anthropic.com/v1/messages",
                     headers={
@@ -397,31 +546,42 @@ async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str 
                     return f"Anthropic API Error: {err_msg}", f"Anthropic API Failed (HTTP {resp.status_code})"
         except Exception as e:
             print(f"Anthropic API Exception: {e}")
-            return f"Anthropic API Exception: {e}", "Anthropic API Call Failed"
+            return f"Anthropic API Exception: {type(e).__name__} ({e})", "Anthropic API Call Failed"
 
-    # 2. Google Gemini API (starts with AIza)
-    elif key.startswith("AIza") or "gemini" in provider.lower():
+    # 2. OpenAI API (starts with sk-)
+    elif key.startswith("sk-") or "openai" in provider.lower():
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={key}"
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
                 resp = await client.post(
-                    url,
-                    headers={"Content-Type": "application/json"},
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {key}"
+                    },
                     json={
-                        "contents": [{"parts": [{"text": prompt}]}]
+                        "model": "gpt-4o-mini",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 300
                     }
                 )
                 data = resp.json()
                 if resp.status_code == 200:
-                    text = data["candidates"][0]["content"]["parts"][0]["text"]
-                    return text, "Live Google Gemini API (gemini-1.5-flash)"
+                    return data["choices"][0]["message"]["content"], "Live OpenAI API (gpt-4o-mini)"
                 else:
                     err_msg = data.get("error", {}).get("message", f"HTTP {resp.status_code}")
-                    print(f"Gemini API Error: {err_msg}")
-                    return f"Gemini API Error: {err_msg}", f"Gemini API Failed (HTTP {resp.status_code})"
+                    print(f"OpenAI API Error: {err_msg}")
+                    return f"OpenAI API Error: {err_msg}", f"OpenAI API Failed (HTTP {resp.status_code})"
         except Exception as e:
-            print(f"Gemini API Exception: {e}")
-            return f"Gemini API Exception: {e}", "Gemini API Call Failed"
+            print(f"OpenAI API Exception: {e}")
+            return f"OpenAI API Exception: {type(e).__name__} ({e})", "OpenAI API Call Failed"
+
+    # 3. Google Gemini API (starts with AQ., AIza, or non-sk prefix)
+    elif key:
+        text, provider, status_code = _call_gemini_api(prompt, key)
+        if status_code == 200:
+            return text, provider
+        else:
+            return text, f"Gemini API Failed (HTTP {status_code})"
 
     # 3. OpenAI API (starts with sk-)
     elif key.startswith("sk-") or "openai" in provider.lower():

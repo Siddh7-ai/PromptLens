@@ -11,7 +11,7 @@ import { SavingsChart } from './components/SavingsChart';
 import { SettingsPanel } from './components/SettingsPanel';
 import { DisciplineStats } from './components/DisciplineStats';
 import { DocsView } from './components/DocsView';
-import { MetricsSummary } from './types';
+import { MetricsSummary, RequestLog } from './types';
 import { RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -109,7 +109,7 @@ export const App: React.FC = () => {
     setCurrentView(view);
   };
 
-  const vaultCount = metrics.active_vault_items ?? metrics.recent_requests.filter((r) => r.retrieval_id !== '-').length;
+  const vaultCount = metrics.active_vault_items ?? metrics.recent_requests.filter((r: RequestLog) => r.retrieval_id !== '-').length;
 
   return (
     <div className="min-h-screen bg-[#000000] text-white flex font-sans antialiased">

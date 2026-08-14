@@ -47,28 +47,41 @@ class MetricsTracker:
     def _load_from_disk(self) -> None:
         """Loads metrics from disk file if available, with backup file fallback."""
         target_path = self.storage_path
-        if target_path and not os.path.exists(target_path):
-            bak_path = f"{target_path}.bak"
-            if os.path.exists(bak_path):
-                target_path = bak_path
-
-        if not target_path or not os.path.exists(target_path):
+        if not target_path:
             return
-        try:
-            with open(target_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                self.total_requests = data.get("total_requests", 0)
-                self.total_baseline_tokens = data.get("total_baseline_tokens", 0)
-                self.total_compressed_tokens = data.get("total_compressed_tokens", 0)
-                self.total_retrievals = data.get("total_retrievals", 0)
-                self.request_logs = data.get("request_logs", [])
-                saved_disc = data.get("discipline_stats", {})
-                for k, v in saved_disc.items():
-                    if k in self.discipline_stats and isinstance(v, dict):
-                        self.discipline_stats[k]["requests"] = v.get("requests", 0)
-                        self.discipline_stats[k]["output_tokens"] = v.get("output_tokens", 0)
-        except Exception:
-            pass
+
+        data = None
+        # Try primary file if it exists and is non-empty
+        if os.path.exists(target_path) and os.path.getsize(target_path) > 0:
+            try:
+                with open(target_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+            except Exception:
+                data = None
+
+        # Fallback to backup file if primary missing or corrupted
+        if not data:
+            bak_path = f"{target_path}.bak"
+            if os.path.exists(bak_path) and os.path.getsize(bak_path) > 0:
+                try:
+                    with open(bak_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                except Exception:
+                    data = None
+
+        if not data or not isinstance(data, dict):
+            return
+
+        self.total_requests = data.get("total_requests", 0)
+        self.total_baseline_tokens = data.get("total_baseline_tokens", 0)
+        self.total_compressed_tokens = data.get("total_compressed_tokens", 0)
+        self.total_retrievals = data.get("total_retrievals", 0)
+        self.request_logs = data.get("request_logs", [])
+        saved_disc = data.get("discipline_stats", {})
+        for k, v in saved_disc.items():
+            if k in self.discipline_stats and isinstance(v, dict):
+                self.discipline_stats[k]["requests"] = v.get("requests", 0)
+                self.discipline_stats[k]["output_tokens"] = v.get("output_tokens", 0)
 
 
     def _save_to_disk(self) -> None:
@@ -141,6 +154,7 @@ class MetricsTracker:
 
     def get_summary(self) -> Dict[str, Any]:
         """Returns consolidated cumulative lifetime metrics summary."""
+        self._load_from_disk()
         tokens_saved = max(0, self.total_baseline_tokens - self.total_compressed_tokens)
         overall_savings_pct = (
             (tokens_saved / self.total_baseline_tokens * 100.0)

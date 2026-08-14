@@ -96,15 +96,29 @@ export const OutputVerification: React.FC = () => {
     }
   };
 
-  const getActiveKeyStatus = () => {
-    const trimmed = apiKey.trim();
-    if (trimmed.startsWith('AIza')) return { label: 'Gemini Key Active', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' };
-    if (trimmed.startsWith('sk-ant-')) return { label: 'Claude Key Active', color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' };
-    if (trimmed.startsWith('sk-')) return { label: 'OpenAI Key Active', color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' };
-    return { label: 'Offline Mode', color: 'text-neutral-400 border-neutral-800 bg-neutral-950' };
-  };
 
-  const keyStatus = getActiveKeyStatus();
+
+  const [testingKey, setTestingKey] = useState<boolean>(false);
+  const [testResult, setTestResult] = useState<{ status: 'success' | 'error'; message: string; provider?: string } | null>(null);
+
+  const handleTestApiKey = async () => {
+    if (!apiKey.trim()) return;
+    setTestingKey(true);
+    setTestResult(null);
+    try {
+      const resp = await fetch('/api/test_key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey }),
+      });
+      const data = await resp.json();
+      setTestResult(data);
+    } catch (err) {
+      setTestResult({ status: 'error', message: 'Failed to connect to proxy server' });
+    } finally {
+      setTestingKey(false);
+    }
+  };
   const [liveFidelityResult, setLiveFidelityResult] = useState<{
     original_tokens: number;
     compressed_tokens: number;
@@ -178,26 +192,51 @@ export const OutputVerification: React.FC = () => {
       </div>
 
       {/* Optional AI API Key Configuration Bar */}
-      <div className="p-4 rounded-2xl bg-neutral-900/90 border border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center space-x-2.5">
-          <Key className="w-4 h-4 text-emerald-400 shrink-0" />
-          <div>
-            <span className="text-xs font-bold text-white block">Optional: Connect OpenAI / Claude / Gemini API Key for Live AI Execution</span>
-            <span className="text-[11px] text-neutral-400 block">Enter your API key (OpenAI sk-..., Claude sk-ant-..., or Gemini AIza...) for live LLM verification.</span>
+      <div className="p-4 rounded-2xl bg-neutral-900/90 border border-neutral-800 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-2.5">
+            <Key className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div>
+              <span className="text-xs font-bold text-white block">Optional: Connect OpenAI / Claude / Gemini API Key for Live AI Execution</span>
+              <span className="text-[11px] text-neutral-400 block">Enter your API key (OpenAI sk-..., Claude sk-ant-..., or Gemini AIza...) and click Test Key to verify.</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => handleApiKeyChange(e.target.value)}
+              placeholder="sk-... / sk-ant-... / AIza... (API Key)"
+              className="bg-neutral-950 text-xs text-neutral-200 border border-neutral-800 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-emerald-500/50 w-full sm:w-72"
+            />
+            <button
+              onClick={handleTestApiKey}
+              disabled={testingKey || !apiKey.trim()}
+              className="px-3.5 py-2 text-xs font-bold font-mono rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition disabled:opacity-40 shrink-0"
+            >
+              {testingKey ? 'Testing...' : 'Test Key ⚡'}
+            </button>
           </div>
         </div>
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <span className={`text-[10px] font-mono font-bold border px-2 py-1 rounded-lg shrink-0 ${keyStatus.color}`}>
-            {keyStatus.label}
-          </span>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => handleApiKeyChange(e.target.value)}
-            placeholder="sk-... / sk-ant-... / AIza... (API Key)"
-            className="bg-neutral-950 text-xs text-neutral-200 border border-neutral-800 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-emerald-500/50 w-full sm:w-72"
-          />
-        </div>
+
+        {/* Live Key Validation Feedback Result */}
+        {testResult && (
+          <div className={`p-3 rounded-xl border text-xs font-mono flex items-center justify-between animate-fadeIn ${
+            testResult.status === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+              : 'bg-red-500/10 border-red-500/30 text-red-300'
+          }`}>
+            <div className="flex items-center space-x-2">
+              <span className="font-bold">{testResult.status === 'success' ? '✓ Verified:' : '✕ API Error:'}</span>
+              <span>{testResult.message}</span>
+            </div>
+            {testResult.provider && (
+              <span className="text-[10px] bg-neutral-950 px-2 py-0.5 rounded border border-neutral-800 font-bold text-white">
+                {testResult.provider}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Preset Selector Tabs */}
