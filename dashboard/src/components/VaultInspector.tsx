@@ -33,7 +33,7 @@ export const VaultInspector: React.FC = () => {
       await fetch(`/api/vault/${retrievalId}`, { method: 'DELETE' });
       setItems((prev) => prev.filter((i) => i.retrieval_id !== retrievalId));
       if (selectedItem?.retrieval_id === retrievalId) {
-        setSelectedItem((prev) => items.find((i) => i.retrieval_id !== retrievalId) || null);
+        setSelectedItem(items.find((i) => i.retrieval_id !== retrievalId) || null);
       }
     } catch (err) {
       console.error('Failed to delete vault item:', err);

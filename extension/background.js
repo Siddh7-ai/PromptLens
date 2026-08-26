@@ -200,46 +200,72 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === 'compress_text') {
-    // 1. Compute local JS compression instantly (0ms) and return response immediately
-    localCompressText(request.content).then((localResult) => {
-      sendResponse({
-        success: true,
-        compressed_text: localResult.compressed_text,
-        retrieval_id: localResult.retrieval_id,
-        savings_pct: localResult.savings_pct,
-        original_tokens: Math.ceil(request.content.length / 4),
-        compressed_tokens: Math.ceil(localResult.compressed_text.length / 4)
-      });
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = setTimeout(() => controller?.abort(), 1200);
 
-      // 2. Fire-and-forget background sync to FastAPI proxy vault without blocking response
-      fetch(`${PROMPTLENS_API_BASE}/api/compress`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: request.content })
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data) {
-            chrome.storage.local.get(['tokens_saved', 'requests_count'], (store = {}) => {
-              const currentSaved = store.tokens_saved || 0;
-              const currentReqs = store.requests_count || 0;
-              const savedTokens = Math.max(0, (data.original_tokens || 0) - (data.compressed_tokens || 0));
-              const newTotalSaved = currentSaved + savedTokens;
+    // 1. Try FastAPI proxy v5 Multi-Stage engine first for task-aware compression and automatic vaulting
+    fetch(`${PROMPTLENS_API_BASE}/api/compress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: request.content,
+        mode: request.mode || 'v5',
+        budget: request.budget || 3000
+      }),
+      signal: controller?.signal
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        clearTimeout(timeoutId);
+        if (data && data.compressed_text) {
+          sendResponse({
+            success: true,
+            compressed_text: data.compressed_text,
+            retrieval_id: data.retrieval_id,
+            savings_pct: data.savings_pct,
+            original_tokens: data.original_tokens,
+            compressed_tokens: data.compressed_tokens,
+            task_category: data.task_category,
+            stage_metrics: data.stage_metrics,
+            source: 'proxy_v5'
+          });
 
-              chrome.storage.local.set({
-                tokens_saved: newTotalSaved,
-                requests_count: currentReqs + 1,
-                last_vault_id: data.retrieval_id,
-                cached_stats: {
-                  total_tokens_saved: newTotalSaved,
-                  estimated_usd_saved: (newTotalSaved / 1000000) * 3.0
-                }
-              });
+          // Sync tokens saved into extension local storage
+          chrome.storage.local.get(['tokens_saved', 'requests_count'], (store = {}) => {
+            const currentSaved = store.tokens_saved || 0;
+            const currentReqs = store.requests_count || 0;
+            const savedTokens = Math.max(0, (data.original_tokens || 0) - (data.compressed_tokens || 0));
+            const newTotalSaved = currentSaved + savedTokens;
+
+            chrome.storage.local.set({
+              tokens_saved: newTotalSaved,
+              requests_count: currentReqs + 1,
+              last_vault_id: data.retrieval_id,
+              cached_stats: {
+                total_tokens_saved: newTotalSaved,
+                estimated_usd_saved: (newTotalSaved / 1000000) * 3.0
+              }
             });
-          }
-        })
-        .catch(() => {});
-    });
+          });
+          return;
+        }
+        throw new Error('Proxy returned empty result');
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        // 2. Fallback to client-side local JS compression (0ms) if proxy is offline
+        localCompressText(request.content).then((localResult) => {
+          sendResponse({
+            success: true,
+            compressed_text: localResult.compressed_text,
+            retrieval_id: localResult.retrieval_id,
+            savings_pct: localResult.savings_pct,
+            original_tokens: Math.ceil(request.content.length / 4),
+            compressed_tokens: Math.ceil(localResult.compressed_text.length / 4),
+            source: 'local'
+          });
+        });
+      });
 
     return true; // Keep async response channel open
   }
