@@ -32,12 +32,27 @@ export interface BenchmarkTask {
   correctness: string;
 }
 
+export interface StageMetric {
+  stage_name: string;
+  token_count: number;
+  reduction_pct: number;
+  latency_ms: number;
+}
+
 export interface CompressionResult {
   compressed_text: string;
   original_tokens: number;
   compressed_tokens: number;
   savings_pct: number;
   retrieval_id: string | null;
+  task_category?: string;
+  task_confidence?: number;
+  stage_metrics?: StageMetric[];
+  preserved_count?: number;
+  summarized_count?: number;
+  omitted_count?: number;
+  parsed_files?: string[];
+  detected_symbols?: string[];
 }
 
 export interface VaultItem {

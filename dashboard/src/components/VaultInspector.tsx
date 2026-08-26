@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { VaultItem } from '../types';
-import { Search, Copy, Check, FileText, Clock, HardDrive, RefreshCw } from 'lucide-react';
+import { Search, Copy, Check, FileText, Clock, HardDrive, RefreshCw, Trash2 } from 'lucide-react';
 
 export const VaultInspector: React.FC = () => {
   const [items, setItems] = useState<VaultItem[]>([]);
@@ -27,10 +27,36 @@ export const VaultInspector: React.FC = () => {
     }
   };
 
+  const handleDeleteItem = async (retrievalId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await fetch(`/api/vault/${retrievalId}`, { method: 'DELETE' });
+      setItems((prev) => prev.filter((i) => i.retrieval_id !== retrievalId));
+      if (selectedItem?.retrieval_id === retrievalId) {
+        setSelectedItem((prev) => items.find((i) => i.retrieval_id !== retrievalId) || null);
+      }
+    } catch (err) {
+      console.error('Failed to delete vault item:', err);
+    }
+  };
+
+  const handleClearVault = async () => {
+    if (!confirm('Are you sure you want to clear all payloads from the memory vault?')) return;
+    try {
+      await fetch('/api/vault/clear', { method: 'POST' });
+      setItems([]);
+      setSelectedItem(null);
+    } catch (err) {
+      console.error('Failed to clear vault:', err);
+    }
+  };
+
   const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     fetchVault();
+    const interval = setInterval(fetchVault, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -58,17 +84,29 @@ export const VaultInspector: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-white">Reversible Vault Inspector</h1>
           <p className="text-sm text-[#888888] mt-1">
-            Browse, search, and inspect raw uncompressed tool outputs stored in the hash-keyed memory vault.
+            Browse, search, and inspect raw uncompressed actual coding prompts stored in the hash-keyed memory vault.
           </p>
         </div>
-        <button
-          onClick={fetchVault}
-          disabled={loading}
-          className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#141414] hover:bg-[#1a1a1a] text-white border border-[#262626] transition flex items-center space-x-2 self-start"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Vault</span>
-        </button>
+        <div className="flex items-center space-x-2 self-start">
+          <button
+            onClick={fetchVault}
+            disabled={loading}
+            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#141414] hover:bg-[#1a1a1a] text-white border border-[#262626] transition flex items-center space-x-2 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Refresh Vault</span>
+          </button>
+          {items.length > 0 && (
+            <button
+              onClick={handleClearVault}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition flex items-center space-x-1.5 cursor-pointer"
+              title="Clear all stored payloads from memory vault"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+              <span>Clear Vault</span>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -97,7 +135,7 @@ export const VaultInspector: React.FC = () => {
                 <div
                   key={item.retrieval_id}
                   onClick={() => setSelectedItem(item)}
-                  className={`p-3 rounded-lg border text-xs cursor-pointer transition space-y-1.5 ${
+                  className={`p-3 rounded-lg border text-xs cursor-pointer transition space-y-1.5 group relative ${
                     selectedItem?.retrieval_id === item.retrieval_id
                       ? 'bg-[#1a1a1a] border-[#333333] text-white'
                       : 'bg-[#090909] border-[#181818] text-[#888888] hover:bg-[#111111] hover:text-[#cccccc]'
@@ -105,7 +143,16 @@ export const VaultInspector: React.FC = () => {
                 >
                   <div className="flex items-center justify-between font-mono">
                     <span className="font-semibold text-white">{item.retrieval_id}</span>
-                    <span className="text-[10px] text-[#666666]">{item.size_bytes.toLocaleString()} B</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[10px] text-[#666666]">{item.size_bytes.toLocaleString()} B</span>
+                      <button
+                        onClick={(e) => handleDeleteItem(item.retrieval_id, e)}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-rose-400 transition"
+                        title="Delete this item"
+                      >
+                        <Trash2 className="w-3 h-3 text-rose-400/80 hover:text-rose-400" />
+                      </button>
+                    </div>
                   </div>
                   <p className="line-clamp-2 text-[11px] font-mono text-[#777777]">{item.preview}</p>
                 </div>

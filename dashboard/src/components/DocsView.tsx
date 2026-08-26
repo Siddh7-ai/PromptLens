@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavView } from './Sidebar';
-import { Terminal, Zap, Server, Code, ArrowRight, HelpCircle, Bot, Globe, Box, SlidersHorizontal, Database, CornerDownLeft, BarChart3, ArrowDown } from 'lucide-react';
+import { Terminal, Zap, Server, Code, ArrowRight, Bot, Globe, Box, SlidersHorizontal, Database, ArrowDown, BarChart3, HelpCircle } from 'lucide-react';
 
 interface DocsViewProps {
   view: NavView;
@@ -127,37 +127,37 @@ export const DocsView: React.FC<DocsViewProps> = ({ view }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 space-y-3">
-            <h3 className="text-base font-bold text-emerald-400">1. JSON Array Skimming</h3>
+            <h3 className="text-base font-bold text-emerald-400">Stage 1: Deterministic Engine</h3>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              When REST API calls return thousands of JSON array elements, PromptLens preserves the head, tail, key statistics, and boundary samples while truncating redundant middle array records.
+              Fast, zero-AI cleaning. Deduplicates repetitive build logs, trims compiler warnings, strips binary noise, and compresses JSON arrays and git diffs.
             </p>
           </div>
 
           <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 space-y-3">
-            <h3 className="text-base font-bold text-emerald-400">2. Stack Trace & Log Trimming</h3>
+            <h3 className="text-base font-bold text-emerald-400">Stage 2: Structural AST Skeletons</h3>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              Build logs and pytest failure outputs keep failure headers, error lines, and final exception call sites while dropping thousands of lines of passing log noise.
+              Parses source code into class hierarchies, method signatures, and route endpoints (Python & JS/TS). Replaces large function bodies with valid skeletons to retain syntax and save 70–80% tokens.
             </p>
           </div>
 
           <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 space-y-3">
-            <h3 className="text-base font-bold text-emerald-400">3. Git Diff Compression</h3>
+            <h3 className="text-base font-bold text-emerald-400">Stage 3: Semantic Relevance Embeddings</h3>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              Preserves modified diff hunks and file path headers while stripping out unchanged surrounding code context lines.
+              Generates subword embeddings in &lt;1ms on CPU and calculates cosine similarity between the user prompt instruction and candidate functions to filter out irrelevant files.
             </p>
           </div>
 
           <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 space-y-3">
-            <h3 className="text-base font-bold text-emerald-400">4. Transparent Reversible Vault</h3>
+            <h3 className="text-base font-bold text-emerald-400">Stage 4: AST Dependency Graph Expansion</h3>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              Original raw payloads are stored under SHA-256 hash IDs. PromptLens injects <code className="text-emerald-400">retrieve_original(id)</code> into LLM tools so models can recover full data on demand.
+              Builds static call-graphs and import-graphs. If editing <code className="text-emerald-300">login()</code>, it automatically pulls in connected dependencies like <code className="text-emerald-300">validateUser()</code> and <code className="text-emerald-300">UserModel</code>.
             </p>
           </div>
 
           <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-6 space-y-3 md:col-span-2">
-            <h3 className="text-base font-bold text-emerald-400">5. Agent Discipline (System Ruleset Nudges)</h3>
+            <h3 className="text-base font-bold text-emerald-400">Stage 5: Knapsack Token Budget Allocator</h3>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              Injects lightweight prompt rulesets (<code className="text-emerald-400">rules/lite.md</code>, <code className="text-emerald-400">rules/full.md</code>, <code className="text-emerald-400">rules/ultra.md</code>) into the Anthropic system prompt to encourage the AI model to generate concise code, skip restating plans, and cut output tokens by ~20% to ~50%.
+              Formulated as mathematical knapsack optimization: <code className="text-emerald-400">max Σ(Relevance_i × Action_i)</code> subject to token budget <code className="text-emerald-400">Σ(Tokens_i) ≤ Budget_B</code>. Produces Tri-State decisions: <strong>PRESERVE</strong> (full code), <strong>SUMMARIZE</strong> (AST skeletons), or <strong>OMIT</strong> (stored in SHA-256 Vault).
             </p>
           </div>
         </div>
@@ -236,42 +236,60 @@ export const DocsView: React.FC<DocsViewProps> = ({ view }) => {
                 </span>
               </div>
 
-              {/* 2x2 Inner Sub-components Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                {/* 1. Compression Engine */}
+              {/* 3x2 Inner Sub-components Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                {/* 1. Task Classifier & Intent */}
+                <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3.5 hover:border-emerald-500/40 transition-all duration-300 shadow-md">
+                  <div className="p-1.5 w-fit rounded-lg bg-emerald-500/10 text-emerald-400 mb-2 border border-emerald-500/20">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-white">1. Task Classifier & Intent</h4>
+                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">7 Coding Intents: Debugging, Refactoring, Gen, Mod, Review, Tests, Docs</p>
+                </div>
+
+                {/* 2. Structural AST Parser */}
+                <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3.5 hover:border-emerald-500/40 transition-all duration-300 shadow-md">
+                  <div className="p-1.5 w-fit rounded-lg bg-emerald-500/10 text-emerald-400 mb-2 border border-emerald-500/20">
+                    <Code className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-white">2. Structural AST Parser</h4>
+                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">Extracts class, method, function skeletons for Python, JS/TS, Go, Java</p>
+                </div>
+
+                {/* 3. Semantic Relevance Scorer */}
+                <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3.5 hover:border-emerald-500/40 transition-all duration-300 shadow-md">
+                  <div className="p-1.5 w-fit rounded-lg bg-emerald-500/10 text-emerald-400 mb-2 border border-emerald-500/20">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-white">3. Semantic Embedder</h4>
+                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">Subword cosine vectors matching symbols directly to user prompt intent</p>
+                </div>
+
+                {/* 4. Dependency Call Graph */}
                 <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3.5 hover:border-emerald-500/40 transition-all duration-300 shadow-md">
                   <div className="p-1.5 w-fit rounded-lg bg-emerald-500/10 text-emerald-400 mb-2 border border-emerald-500/20">
                     <Box className="w-4 h-4" />
                   </div>
-                  <h4 className="text-xs font-bold text-white">Compression engine</h4>
-                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">JSON arrays, logs, stack traces, git diffs</p>
+                  <h4 className="text-xs font-bold text-white">4. Dependency Call Graph</h4>
+                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">1-hop & 2-hop neighborhood expansion connecting callers to helper models</p>
                 </div>
 
-                {/* 2. Agent Discipline Layer */}
+                {/* 5. Knapsack Budget Allocator */}
                 <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3.5 hover:border-emerald-500/40 transition-all duration-300 shadow-md">
                   <div className="p-1.5 w-fit rounded-lg bg-emerald-500/10 text-emerald-400 mb-2 border border-emerald-500/20">
                     <SlidersHorizontal className="w-4 h-4" />
                   </div>
-                  <h4 className="text-xs font-bold text-white">Agent discipline layer</h4>
-                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">System-prompt nudges: off / lite / full / ultra</p>
+                  <h4 className="text-xs font-bold text-white">5. Knapsack Budget Allocator</h4>
+                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">Tri-State action decider: PRESERVE full code, SUMMARIZE skeletons, OMIT</p>
                 </div>
 
-                {/* 3. Reversible Vault */}
+                {/* 6. Reversible Vault & Tool Injector */}
                 <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3.5 hover:border-emerald-500/40 transition-all duration-300 shadow-md">
                   <div className="p-1.5 w-fit rounded-lg bg-emerald-500/10 text-emerald-400 mb-2 border border-emerald-500/20">
                     <Database className="w-4 h-4" />
                   </div>
-                  <h4 className="text-xs font-bold text-white">Reversible vault</h4>
-                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">SHA-256 storage, 1-hour auto-expiry (TTL)</p>
-                </div>
-
-                {/* 4. Retrieval Tool Injector */}
-                <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-3.5 hover:border-emerald-500/40 transition-all duration-300 shadow-md">
-                  <div className="p-1.5 w-fit rounded-lg bg-emerald-500/10 text-emerald-400 mb-2 border border-emerald-500/20">
-                    <CornerDownLeft className="w-4 h-4" />
-                  </div>
-                  <h4 className="text-xs font-bold text-white">Retrieval tool injector</h4>
-                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">Adds retrieve_original() to the LLM's tool list</p>
+                  <h4 className="text-xs font-bold text-white">6. Reversible Vault & Tool</h4>
+                  <p className="text-[11px] text-neutral-400 mt-1 leading-relaxed">SHA-256 prompt storage with retrieve_original() on-demand tool recovery</p>
                 </div>
               </div>
             </div>

@@ -197,8 +197,8 @@ export const OutputVerification: React.FC = () => {
           <div className="flex items-center space-x-2.5">
             <Key className="w-4 h-4 text-emerald-400 shrink-0" />
             <div>
-              <span className="text-xs font-bold text-white block">Optional: Connect OpenAI / Claude / Gemini API Key for Live AI Execution</span>
-              <span className="text-[11px] text-neutral-400 block">Enter your API key (OpenAI sk-..., Claude sk-ant-..., or Gemini AIza...) and click Test Key to verify.</span>
+              <span className="text-xs font-bold text-white block">Optional: Connect Groq / Grok / OpenAI / Claude / Gemini API Key for Live AI Execution</span>
+              <span className="text-[11px] text-neutral-400 block">Enter your API key (Groq gsk_..., Grok xai-..., OpenAI sk-..., Claude sk-ant-..., or Gemini AIza...) and click Test Key to verify.</span>
             </div>
           </div>
           <div className="flex items-center space-x-2 w-full sm:w-auto">
@@ -206,7 +206,7 @@ export const OutputVerification: React.FC = () => {
               type="password"
               value={apiKey}
               onChange={(e) => handleApiKeyChange(e.target.value)}
-              placeholder="sk-... / sk-ant-... / AIza... (API Key)"
+              placeholder="gsk_... / xai-... / sk-... / AIza..."
               className="bg-neutral-950 text-xs text-neutral-200 border border-neutral-800 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-emerald-500/50 w-full sm:w-72"
             />
             <button

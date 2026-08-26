@@ -20,6 +20,7 @@ socket.getaddrinfo = _getaddrinfo_ipv4_only
 
 from src.compress.json_compressor import compress_json
 from src.compress.text_compressor import compress_text, get_token_count
+from src.compress.pipeline import PromptLensPipeline
 from src.rules.agent_discipline import inject_discipline_ruleset
 from src.store.retrieval_store import get_global_store
 from src.proxy.stats import get_global_metrics
@@ -27,6 +28,7 @@ from src.proxy.dashboard_html import DASHBOARD_HTML
 
 retrieval_store = get_global_store()
 metrics_tracker = get_global_metrics()
+pipeline_engine = PromptLensPipeline()
 
 TARGET_BASE_URL = os.getenv("TARGET_BASE_URL", "https://api.anthropic.com").rstrip("/")
 
@@ -46,6 +48,8 @@ app.add_middleware(
 
 class PlaygroundRequest(BaseModel):
     content: str
+    mode: str = "v5"
+    budget: int | None = None
 
 
 # Headers that shouldn't be forwarded directly between client and upstream
@@ -303,6 +307,22 @@ async def get_vault_items():
     return {"items": retrieval_store.list_items()}
 
 
+@app.post("/api/vault/clear")
+async def clear_vault():
+    """Clears all stored payloads from the memory vault."""
+    retrieval_store._store.clear()
+    return {"status": "cleared", "items_count": 0}
+
+
+@app.delete("/api/vault/{retrieval_id}")
+async def delete_vault_item(retrieval_id: str):
+    """Deletes a specific payload from the memory vault."""
+    if retrieval_id in retrieval_store._store:
+        del retrieval_store._store[retrieval_id]
+        return {"status": "deleted", "retrieval_id": retrieval_id}
+    return Response(status_code=404, content=json.dumps({"error": "Item not found"}), media_type="application/json")
+
+
 @app.get("/api/vault/{retrieval_id}")
 async def get_vault_item_content(
     retrieval_id: str,
@@ -345,27 +365,38 @@ async def update_settings(req: SettingsUpdateRequest):
 
 @app.post("/api/compress")
 async def playground_compress(req: PlaygroundRequest):
-    """API endpoint for interactive React Playground compression preview."""
-    new_content, stored_id, ratio = _compress_tool_content(req.content)
-    from src.compress.text_compressor import get_token_count
-    orig_tokens = get_token_count(req.content)
-    comp_tokens = get_token_count(new_content)
-    savings_pct = round((1.0 - (comp_tokens / orig_tokens)) * 100.0, 1) if orig_tokens > 0 else 0.0
+    """API endpoint for interactive React Playground compression preview with task-aware multi-stage metrics."""
+    res = pipeline_engine.compress(req.content, mode=req.mode, budget=req.budget)
 
     metrics_tracker.record_request(
         path="/api/compress",
         method="POST",
-        baseline_tokens=orig_tokens,
-        compressed_tokens=comp_tokens,
-        retrieval_id=stored_id
+        baseline_tokens=res.original_tokens,
+        compressed_tokens=res.compressed_tokens,
+        retrieval_id=res.retrieval_id
     )
 
     return {
-        "compressed_text": new_content,
-        "original_tokens": orig_tokens,
-        "compressed_tokens": comp_tokens,
-        "savings_pct": savings_pct,
-        "retrieval_id": stored_id
+        "compressed_text": res.final_prompt,
+        "original_tokens": res.original_tokens,
+        "compressed_tokens": res.compressed_tokens,
+        "savings_pct": res.total_savings_pct,
+        "retrieval_id": res.retrieval_id,
+        "task_category": res.task_category.value,
+        "task_confidence": res.task_confidence,
+        "stage_metrics": [
+            {
+                "stage_name": sm.stage_name,
+                "token_count": sm.token_count,
+                "reduction_pct": sm.reduction_pct,
+                "latency_ms": sm.latency_ms
+            } for sm in res.stage_metrics
+        ],
+        "preserved_count": res.preserved_count,
+        "summarized_count": res.summarized_count,
+        "omitted_count": res.omitted_count,
+        "parsed_files": res.parsed_files,
+        "detected_symbols": res.detected_symbols,
     }
 
 
@@ -377,6 +408,8 @@ class VerificationRequest(BaseModel):
 
 class TestKeyRequest(BaseModel):
     api_key: str
+    provider: str = "auto"
+    prompt: str = "Ping test"
 
 
 def _call_gemini_api(prompt: str, key: str) -> tuple[str, str, int]:
@@ -448,19 +481,89 @@ def _call_gemini_api(prompt: str, key: str) -> tuple[str, str, int]:
     return f"Gemini API Error ({last_code}): {last_err}", "Google Gemini", last_code
 
 
+def _extract_api_error_message(data: Any, fallback: str = "API Request Failed") -> str:
+    if isinstance(data, dict):
+        err = data.get("error")
+        if isinstance(err, dict):
+            return err.get("message") or str(err)
+        elif isinstance(err, str):
+            return err
+        elif "message" in data:
+            return str(data["message"])
+        return str(data)
+    return str(data) if data else fallback
+
+
 @app.post("/api/test_key")
 async def test_key(req: TestKeyRequest):
     """
-    Tests an API key live against Gemini, OpenAI, or Anthropic.
+    Tests an API key against Grok, Anthropic, OpenAI, or Gemini providers to verify connectivity.
     """
+    provider = (req.provider or "auto").strip()
     key = req.api_key.strip()
     if not key:
         return {"status": "error", "message": "API key is empty"}
 
-    # 1. Anthropic Claude API (starts with sk-ant-)
-    if key.startswith("sk-ant-"):
+    # 1. Groq Cloud API (starts with gsk_)
+    if key.startswith("gsk_") or "groq" in provider.lower():
         try:
-            async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
+            async with httpx.AsyncClient(verify=False, timeout=5.0) as client:
+                resp = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {key}"
+                    },
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "messages": [{"role": "user", "content": "Ping test"}],
+                        "max_tokens": 10
+                    }
+                )
+                try:
+                    data = resp.json()
+                except Exception:
+                    data = resp.text
+                if resp.status_code == 200 and isinstance(data, dict) and "choices" in data:
+                    return {"status": "success", "provider": "Groq Cloud (llama-3.3-70b)", "message": "Groq API Key Verified & Active!"}
+                else:
+                    err_msg = _extract_api_error_message(data, f"HTTP {resp.status_code}")
+                    return {"status": "error", "provider": "Groq Cloud", "message": f"Groq API Error ({resp.status_code}): {err_msg}"}
+        except Exception as e:
+            return {"status": "error", "provider": "Groq Cloud", "message": f"Connection Error: {type(e).__name__} ({e})"}
+
+    # 2. Grok API / xAI (starts with xai-)
+    elif key.startswith("xai-") or "grok" in provider.lower() or "xai" in provider.lower():
+        try:
+            async with httpx.AsyncClient(verify=False, timeout=5.0) as client:
+                resp = await client.post(
+                    "https://api.x.ai/v1/chat/completions",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {key}"
+                    },
+                    json={
+                        "model": "grok-2-1212",
+                        "messages": [{"role": "user", "content": "Ping test"}],
+                        "max_tokens": 10
+                    }
+                )
+                try:
+                    data = resp.json()
+                except Exception:
+                    data = resp.text
+                if resp.status_code == 200 and isinstance(data, dict) and "choices" in data:
+                    return {"status": "success", "provider": "xAI Grok (grok-2-1212)", "message": "Grok API Key Verified & Active!"}
+                else:
+                    err_msg = _extract_api_error_message(data, f"HTTP {resp.status_code}")
+                    return {"status": "error", "provider": "xAI Grok", "message": f"Grok API Error ({resp.status_code}): {err_msg}"}
+        except Exception as e:
+            return {"status": "error", "provider": "xAI Grok", "message": f"Connection Error: {type(e).__name__} ({e})"}
+
+    # 3. Anthropic Claude API (starts with sk-ant-)
+    elif key.startswith("sk-ant-"):
+        try:
+            async with httpx.AsyncClient(verify=False, timeout=5.0) as client:
                 resp = await client.post(
                     "https://api.anthropic.com/v1/messages",
                     headers={
@@ -474,19 +577,22 @@ async def test_key(req: TestKeyRequest):
                         "messages": [{"role": "user", "content": "Ping test"}]
                     }
                 )
-                data = resp.json()
-                if resp.status_code == 200:
+                try:
+                    data = resp.json()
+                except Exception:
+                    data = resp.text
+                if resp.status_code == 200 and isinstance(data, dict) and "content" in data:
                     return {"status": "success", "provider": "Anthropic Claude (claude-3-5-sonnet)", "message": "Claude API Key Verified & Active!"}
                 else:
-                    err_msg = data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                    err_msg = _extract_api_error_message(data, f"HTTP {resp.status_code}")
                     return {"status": "error", "provider": "Anthropic Claude", "message": f"Claude API Error ({resp.status_code}): {err_msg}"}
         except Exception as e:
             return {"status": "error", "provider": "Anthropic Claude", "message": f"Connection Error: {type(e).__name__} ({e})"}
 
-    # 2. OpenAI API (starts with sk-)
+    # 4. OpenAI API (starts with sk-)
     elif key.startswith("sk-"):
         try:
-            async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
+            async with httpx.AsyncClient(verify=False, timeout=5.0) as client:
                 resp = await client.post(
                     "https://api.openai.com/v1/chat/completions",
                     headers={
@@ -499,16 +605,19 @@ async def test_key(req: TestKeyRequest):
                         "max_tokens": 10
                     }
                 )
-                data = resp.json()
-                if resp.status_code == 200:
+                try:
+                    data = resp.json()
+                except Exception:
+                    data = resp.text
+                if resp.status_code == 200 and isinstance(data, dict) and "choices" in data:
                     return {"status": "success", "provider": "OpenAI (gpt-4o-mini)", "message": "OpenAI API Key Verified & Active!"}
                 else:
-                    err_msg = data.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                    err_msg = _extract_api_error_message(data, f"HTTP {resp.status_code}")
                     return {"status": "error", "provider": "OpenAI", "message": f"OpenAI API Error ({resp.status_code}): {err_msg}"}
         except Exception as e:
             return {"status": "error", "provider": "OpenAI", "message": f"Connection Error: {type(e).__name__} ({e})"}
 
-    # 3. Google Gemini API (starts with AQ., AIza, or non-sk prefix)
+    # 5. Google Gemini API (starts with AQ., AIza, or non-sk prefix)
     else:
         text, provider, status_code = _call_gemini_api("Ping test", key)
         if status_code == 200:
@@ -518,10 +627,70 @@ async def test_key(req: TestKeyRequest):
 
 
 async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str = "auto") -> tuple[str, str]:
-    key = (api_key or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
+    key = (api_key or os.getenv("GROQ_API_KEY") or os.getenv("GROK_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip()
     
-    # 1. Anthropic Claude API (starts with sk-ant-)
-    if key.startswith("sk-ant-") or "claude" in provider.lower() or "anthropic" in provider.lower():
+    # 1. Groq Cloud API (starts with gsk_)
+    if key.startswith("gsk_") or "groq" in provider.lower():
+        try:
+            async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
+                resp = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {key}"
+                    },
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 300
+                    }
+                )
+                try:
+                    data = resp.json()
+                except Exception:
+                    data = resp.text
+                if resp.status_code == 200 and isinstance(data, dict) and "choices" in data:
+                    return data["choices"][0]["message"]["content"], "Live Groq Cloud (llama-3.3-70b)"
+                else:
+                    err_msg = _extract_api_error_message(data, f"HTTP {resp.status_code}")
+                    print(f"Groq API Error: {err_msg}")
+                    return f"Groq API Error: {err_msg}", f"Groq API Failed (HTTP {resp.status_code})"
+        except Exception as e:
+            print(f"Groq API Exception: {e}")
+            return f"Groq API Exception: {type(e).__name__} ({e})", "Groq API Call Failed"
+
+    # 2. Grok API / xAI (starts with xai-)
+    elif key.startswith("xai-") or "grok" in provider.lower() or "xai" in provider.lower():
+        try:
+            async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
+                resp = await client.post(
+                    "https://api.x.ai/v1/chat/completions",
+                    headers={
+                        "Content-Type": "application/json",
+                        "Authorization": f"Bearer {key}"
+                    },
+                    json={
+                        "model": "grok-2-1212",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 300
+                    }
+                )
+                try:
+                    data = resp.json()
+                except Exception:
+                    data = resp.text
+                if resp.status_code == 200 and isinstance(data, dict) and "choices" in data:
+                    return data["choices"][0]["message"]["content"], "Live xAI Grok (grok-2-1212)"
+                else:
+                    err_msg = _extract_api_error_message(data, f"HTTP {resp.status_code}")
+                    print(f"Grok API Error: {err_msg}")
+                    return f"Grok API Error: {err_msg}", f"Grok API Failed (HTTP {resp.status_code})"
+        except Exception as e:
+            print(f"Grok API Exception: {e}")
+            return f"Grok API Exception: {type(e).__name__} ({e})", "Grok API Call Failed"
+
+    # 2. Anthropic Claude API (starts with sk-ant-)
+    elif key.startswith("sk-ant-") or "claude" in provider.lower() or "anthropic" in provider.lower():
         try:
             async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
                 resp = await client.post(
@@ -548,7 +717,7 @@ async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str 
             print(f"Anthropic API Exception: {e}")
             return f"Anthropic API Exception: {type(e).__name__} ({e})", "Anthropic API Call Failed"
 
-    # 2. OpenAI API (starts with sk-)
+    # 3. OpenAI API (starts with sk-)
     elif key.startswith("sk-") or "openai" in provider.lower():
         try:
             async with httpx.AsyncClient(verify=False, timeout=15.0) as client:
@@ -575,7 +744,7 @@ async def _call_ai_model(prompt: str, api_key: str | None = None, provider: str 
             print(f"OpenAI API Exception: {e}")
             return f"OpenAI API Exception: {type(e).__name__} ({e})", "OpenAI API Call Failed"
 
-    # 3. Google Gemini API (starts with AQ., AIza, or non-sk prefix)
+    # 4. Google Gemini API (starts with AQ., AIza, or non-sk prefix)
     elif key:
         text, provider, status_code = _call_gemini_api(prompt, key)
         if status_code == 200:
