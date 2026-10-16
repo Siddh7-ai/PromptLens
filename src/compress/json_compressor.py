@@ -5,6 +5,7 @@ from typing import Any
 
 import tiktoken
 from src.store.retrieval_store import RetrievalStore, get_global_store
+from src.utils.token_utils import get_token_count
 
 ENCODING_NAME = "cl100k_base"
 
@@ -17,15 +18,6 @@ class JSONCompressionResult:
     compressed_tokens: int
     is_compressed: bool
     compression_ratio: float  # e.g., 0.80 means 80% reduction in tokens
-
-
-def get_token_count(text: str) -> int:
-    """Utility to count tokens using tiktoken (cl100k_base)."""
-    try:
-        encoding = tiktoken.get_encoding(ENCODING_NAME)
-        return len(encoding.encode(text))
-    except Exception:
-        return len(text.split())
 
 
 def _generate_array_skimming_summary(items: list) -> dict:
@@ -234,4 +226,44 @@ def compress_json(
         is_compressed=True,
         compression_ratio=ratio,
     )
+
+
+class JSONCompressor:
+    """
+    Class-based JSON compressor adhering to PromptLens core pipeline specs.
+    Preserves key fields (status, error, id, type, etc.) and intelligently samples
+    large arrays into representative items with structured summary metadata.
+    """
+
+    IMPORTANT_KEYS = {"error", "status", "message", "id", "name", "type", "timestamp", "code"}
+
+    def __init__(
+        self,
+        max_array_items: int = 2,
+        min_token_threshold: int = 50,
+        store: Any = None,
+        max_depth: int = 15,
+        preserve_keys: set[str] | None = None
+    ):
+        self.max_array_items = max_array_items
+        self.min_token_threshold = min_token_threshold
+        self.store = store or get_global_store()
+        self.max_depth = max_depth
+        self.preserve_keys = set(preserve_keys or self.IMPORTANT_KEYS)
+
+    def compress(
+        self,
+        json_str: str,
+        retrieval_id: str | None = None,
+        save_to_store: bool = True
+    ) -> JSONCompressionResult:
+        """Compresses JSON string safely with fail-open guarantee."""
+        return compress_json(
+            json_str=json_str,
+            max_array_items=self.max_array_items,
+            min_token_threshold=self.min_token_threshold,
+            store=self.store if save_to_store else None,
+            max_depth=self.max_depth
+        )
+
 

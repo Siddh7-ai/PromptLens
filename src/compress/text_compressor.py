@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import tiktoken
+from src.utils.token_utils import get_token_count
 
 ENCODING_NAME = "cl100k_base"
 
@@ -16,15 +17,6 @@ class TextCompressionResult:
     compressed_tokens: int
     is_compressed: bool
     compression_ratio: float  # e.g., 0.60 means 60% reduction in tokens
-
-
-def get_token_count(text: str) -> int:
-    """Utility to count tokens using tiktoken (cl100k_base)."""
-    try:
-        encoding = tiktoken.get_encoding(ENCODING_NAME)
-        return len(encoding.encode(text))
-    except Exception:
-        return len(text.split())
 
 
 def is_log_or_build_output(lines: list[str]) -> bool:
@@ -372,3 +364,125 @@ def compress_text(
         is_compressed=True,
         compression_ratio=ratio,
     )
+
+
+class TextCompressor:
+    """
+    Compresses long natural-language content, design documents, and prose.
+    Preserves headings, important instructions, and key facts while removing
+    redundant or repetitive paragraphs. Fails open on errors.
+    """
+
+    def __init__(
+        self,
+        min_tokens_threshold: int = 120,
+        preserve_headings: bool = True,
+        store: Any = None
+    ):
+        self.min_tokens_threshold = min_tokens_threshold
+        self.preserve_headings = preserve_headings
+        self.store = store
+
+    def _is_important_paragraph(self, p: str) -> bool:
+        """Determines if a paragraph contains key instructions, headings, or rules."""
+        stripped = p.strip()
+        if not stripped:
+            return False
+        # Headings
+        if stripped.startswith(("# ", "## ", "### ", "#### ", "**Important", "**Note", "> [!")):
+            return True
+        # Imperative commands or numbered steps
+        if re.match(r"^\d+\.\s+", stripped) or stripped.startswith(("- MUST", "- DO NOT", "- NEVER", "- ALWAYS")):
+            return True
+        # Keywords
+        lower = stripped.lower()
+        if any(w in lower for w in ["instruction", "requirement", "critical", "warning", "note:"]):
+            return True
+        return False
+
+    def compress(
+        self,
+        text: str,
+        retrieval_id: str | None = None,
+        save_to_store: bool = True
+    ) -> TextCompressionResult:
+        """
+        Compresses natural language text.
+        Preserves beginning context, headings, critical instructions, and end context.
+        """
+        orig_tokens = get_token_count(text)
+        if orig_tokens < self.min_tokens_threshold:
+            return TextCompressionResult(
+                compressed_str=text,
+                retrieval_id=retrieval_id or "",
+                original_tokens=orig_tokens,
+                compressed_tokens=orig_tokens,
+                is_compressed=False,
+                compression_ratio=0.0
+            )
+
+        try:
+            paragraphs = text.split("\n\n")
+            if len(paragraphs) <= 3:
+                # Fall back to standard line-based compression
+                return compress_text(text, store=self.store, min_token_threshold=self.min_tokens_threshold)
+
+            # Deduplicate repetitive paragraphs
+            seen_paras = set()
+            unique_paragraphs = []
+            for p in paragraphs:
+                p_clean = " ".join(p.strip().split())
+                if p_clean not in seen_paras:
+                    seen_paras.add(p_clean)
+                    unique_paragraphs.append(p)
+
+            # Preserve beginning (first 2 paragraphs) and end (last 1-2 paragraphs)
+            head_p = unique_paragraphs[:2]
+            tail_p = unique_paragraphs[-2:]
+            middle_p = unique_paragraphs[2:-2]
+
+            # Filter middle for headings and key instructions
+            important_middle = [p for p in middle_p if self._is_important_paragraph(p)]
+
+            out = list(head_p)
+            omitted = len(middle_p) - len(important_middle)
+            if omitted > 0:
+                short_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:8]
+                rid = retrieval_id or f"pl_{short_hash}"
+                out.append(f"--- [PromptLens: Compressed {omitted} background prose paragraphs. ID: {rid}] ---")
+
+            out.extend(important_middle)
+            out.extend(tail_p)
+
+            compressed_str = "\n\n".join(out)
+            comp_tokens = get_token_count(compressed_str)
+
+            if comp_tokens < orig_tokens:
+                short_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:8]
+                rid = retrieval_id or f"pl_{short_hash}"
+                if save_to_store and self.store:
+                    self.store.save(text, retrieval_id=rid)
+                compressed_str += f"\n\n[PromptLens compressed content: {rid}]"
+                comp_tokens = get_token_count(compressed_str)
+                ratio = round(1.0 - (comp_tokens / orig_tokens), 4)
+                return TextCompressionResult(
+                    compressed_str=compressed_str,
+                    retrieval_id=rid,
+                    original_tokens=orig_tokens,
+                    compressed_tokens=comp_tokens,
+                    is_compressed=True,
+                    compression_ratio=ratio
+                )
+        except Exception:
+            # Fail open
+            pass
+
+        return TextCompressionResult(
+            compressed_str=text,
+            retrieval_id=retrieval_id or "",
+            original_tokens=orig_tokens,
+            compressed_tokens=orig_tokens,
+            is_compressed=False,
+            compression_ratio=0.0
+        )
+

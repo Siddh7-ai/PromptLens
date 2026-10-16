@@ -32,3 +32,9 @@ scratch/
 VIVA_FAQ.md
 MONTH*.md
 
+# Databases & Local state
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
